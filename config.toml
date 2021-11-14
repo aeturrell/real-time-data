@@ -1,7 +1,14 @@
 # Keys
 title = "My TOML Config"
 
-# Tables
-[urls]
-cla08 = "https://www.ons.gov.uk/employmentandlabourmarket/peoplenotinwork/outofworkbenefits/datasets/claimantcountrevisionstrianglecla02"
+# Datasets
+[[Q]]
+[Q.urls]
 gdp_expenditure = "https://www.ons.gov.uk/economy/grossdomesticproductgdp/datasets/realtimedatabaseforukgdpcomponentsfortheexpenditureapproachtothemeasureofgdp"
+gdp_income = "https://www.ons.gov.uk/economy/grossdomesticproductgdp/datasets/realtimedatabaseforukgdpcomponentsfortheincomeapproachtothemeasureofgdp"
+business_inv = "https://www.ons.gov.uk/economy/grossdomesticproductgdp/datasets/businessinvestmentrealtimedatabase"
+
+[[M]]
+[M.urls]
+cla08 = "https://www.ons.gov.uk/employmentandlabourmarket/peoplenotinwork/outofworkbenefits/datasets/claimantcountrevisionstrianglecla02"
+unem04 = "https://www.ons.gov.uk/employmentandlabourmarket/peoplenotinwork/unemployment/datasets/unemploymentraterevisionstriangleunem04"

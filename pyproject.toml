@@ -12,6 +12,8 @@ jupyterlab = "^3.2.3"
 toml = "^0.10.2"
 beautifulsoup4 = "^4.10.0"
 openpyxl = "^3.0.9"
+black = "^21.10b0"
+xlrd = "^2.0.1"
 
 [tool.poetry.dev-dependencies]
 
