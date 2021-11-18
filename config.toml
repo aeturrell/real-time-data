@@ -12,3 +12,8 @@ business_inv = "https://www.ons.gov.uk/economy/grossdomesticproductgdp/datasets/
 [M.urls]
 cla08 = "https://www.ons.gov.uk/employmentandlabourmarket/peoplenotinwork/outofworkbenefits/datasets/claimantcountrevisionstrianglecla02"
 unem04 = "https://www.ons.gov.uk/employmentandlabourmarket/peoplenotinwork/unemployment/datasets/unemploymentraterevisionstriangleunem04"
+
+
+[[triangles]]
+[triangles.urls]
+gdp_cvm = "https://www.ons.gov.uk/economy/grossdomesticproductgdp/datasets/revisionstrianglesforukgdpabmi"

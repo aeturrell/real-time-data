@@ -41,7 +41,7 @@ def find_files(url: str):
     hrefs = [a["href"] for a in soup.find_all("a")]
     hrefs = [a for a in hrefs if len(a.split(".")) > 1]
     hrefs = [
-        a for a in hrefs if (a.split(".")[1] == "xlsx" or a.split(".")[1] == "xls")
+        a for a in hrefs if (a.split(".")[1] == "xlsx" or a.split(".")[1] == "xls" or a.split(".")[1] == "zip")
     ]
     return hrefs
 
@@ -76,6 +76,44 @@ def find_vintage_from_pub_datetime(df_in: pd.DataFrame):
         lambda x: offsets[x["estimate"]] + x["pub_datetime"], axis=1
     )
     return df_in
+
+
+def download_triangles_data(config):
+    key_file_words = ["Quarterly", "M on M"]
+    dict_of_urls = config["triangles"][0]["urls"]
+    dict_of_files = {k: find_files(v) for k, v in dict_of_urls.items()}
+    # restrict to only first file found on each page
+    for key, value in dict_of_files.items():
+        dict_of_files[key] = value[0]
+    # turn this into a dataframe
+    df_urls = pd.DataFrame(dict_of_files, index=["url"]).T
+    df_urls["file_name"] = df_urls["url"].apply(lambda x: x.split("/")[-1])
+    df_urls[["url", "file_name"]].set_index("url").to_dict()
+    # Download the files
+    df_urls.apply(lambda x: download_and_save_file(x["url"], x["file_name"]), axis=1)
+    # add file extensions
+    df_urls["extension"] = df_urls["file_name"].str.split(".").str[1]
+    # Add sheet names
+    df_urls["sheet_names"] = "None"
+    df_urls.loc[df_urls["extension"] == "xlsx", "sheet_names"] = df_urls.loc[
+        df_urls["extension"] == "xlsx", :
+    ].apply(lambda x: get_sheetnames_xlsx(Path("scratch") / x["file_name"]), axis=1)
+    if "xls" in df_urls["extension"].unique():
+        df_urls.loc[df_urls["extension"] == "xls", "sheet_names"] = df_urls.loc[
+            df_urls["extension"] == "xls", :
+        ].apply(lambda x: get_sheetnames_xls(Path("scratch") / x["file_name"]), axis=1)
+    df_urls["sheet_names"] = remove_bad_sheets(df_urls["sheet_names"])
+    df_urls["freq"] = freq
+    return df_urls
+
+
+def combined_df_urls(config):
+    df_urls = pd.DataFrame()
+    for freq in ["Q", "M"]:
+        df_urls = pd.concat(
+            [df_urls, populate_dataframe_of_data_urls(config, freq)], axis=0
+        )
+    return df_urls
 
 
 def populate_dataframe_of_data_urls(config, freq):
