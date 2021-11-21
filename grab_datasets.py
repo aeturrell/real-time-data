@@ -7,6 +7,10 @@ from pathlib import Path, PosixPath
 from openpyxl import load_workbook
 import xlrd
 import re
+import zipfile
+import itertools
+import os
+from urllib.request import urlopen
 
 # Read local `config.toml` file.
 config = toml.load("config.toml")
@@ -24,15 +28,7 @@ def get_sheetnames_xls(filepath: PosixPath):
 
 
 def remove_bad_sheets(series: pd.Series):
-    bad_names = [
-        "Information",
-        "NOTICES",
-        "revisions",
-        "comments",
-        "after 12 Months",
-        "Chart Titles",
-    ]
-    return series.apply(lambda x: [el for el in x if el not in bad_names])
+    return series.apply(lambda x: [el for el in x if "triangle" in el])
 
 
 def find_files(url: str):
@@ -46,6 +42,31 @@ def find_files(url: str):
     return hrefs
 
 
+def download_zip_file(file_url: str, in_file_name: str):
+    """Downloads a zip file from given url.
+
+    :param file_url: url
+    :type file_url: str
+    :param in_file_name: zip file to download
+    :type in_file_name: str
+    :return: Name of the file actually downloaded
+    :rtype: str
+    """
+    _ = download_and_save_file(file_url, in_file_name)
+    names_to_keep = ["quarterly", "m on m"]
+    file_location = Path("scratch") / in_file_name
+    zip = zipfile.ZipFile(file_location)
+    names = [name for name in zip.namelist()]
+    files_to_extract = [[x for x in names if y in x.lower()] for y in names_to_keep]
+    files_to_extract = list(itertools.chain(*files_to_extract))
+    for file in files_to_extract:
+        zip.extract(file, path=Path("scratch"))
+    assert(len(files_to_extract) == 1)
+    # Tidy up by removing the zip
+    os.remove(file_location)
+    return files_to_extract[0]
+
+
 def download_and_save_file(file_url: str, file_name: str):
     # Download the file from the top of the list
     file_location = Path("scratch") / file_name
@@ -56,6 +77,7 @@ def download_and_save_file(file_url: str, file_name: str):
         with open(Path("scratch") / file_name, "wb") as f:
             f.write(r.content)
     print("Success: file downloaded")
+    return file_name
 
 
 def convert_yyyy_qn_to_datetime(series: pd.Series):
@@ -78,35 +100,6 @@ def find_vintage_from_pub_datetime(df_in: pd.DataFrame):
     return df_in
 
 
-def download_triangles_data(config):
-    key_file_words = ["Quarterly", "M on M"]
-    dict_of_urls = config["triangles"][0]["urls"]
-    dict_of_files = {k: find_files(v) for k, v in dict_of_urls.items()}
-    # restrict to only first file found on each page
-    for key, value in dict_of_files.items():
-        dict_of_files[key] = value[0]
-    # turn this into a dataframe
-    df_urls = pd.DataFrame(dict_of_files, index=["url"]).T
-    df_urls["file_name"] = df_urls["url"].apply(lambda x: x.split("/")[-1])
-    df_urls[["url", "file_name"]].set_index("url").to_dict()
-    # Download the files
-    df_urls.apply(lambda x: download_and_save_file(x["url"], x["file_name"]), axis=1)
-    # add file extensions
-    df_urls["extension"] = df_urls["file_name"].str.split(".").str[1]
-    # Add sheet names
-    df_urls["sheet_names"] = "None"
-    df_urls.loc[df_urls["extension"] == "xlsx", "sheet_names"] = df_urls.loc[
-        df_urls["extension"] == "xlsx", :
-    ].apply(lambda x: get_sheetnames_xlsx(Path("scratch") / x["file_name"]), axis=1)
-    if "xls" in df_urls["extension"].unique():
-        df_urls.loc[df_urls["extension"] == "xls", "sheet_names"] = df_urls.loc[
-            df_urls["extension"] == "xls", :
-        ].apply(lambda x: get_sheetnames_xls(Path("scratch") / x["file_name"]), axis=1)
-    df_urls["sheet_names"] = remove_bad_sheets(df_urls["sheet_names"])
-    df_urls["freq"] = freq
-    return df_urls
-
-
 def combined_df_urls(config):
     df_urls = pd.DataFrame()
     for freq in ["Q", "M"]:
@@ -126,21 +119,35 @@ def populate_dataframe_of_data_urls(config, freq):
     df_urls = pd.DataFrame(dict_of_files, index=["url"]).T
     df_urls["file_name"] = df_urls["url"].apply(lambda x: x.split("/")[-1])
     df_urls[["url", "file_name"]].set_index("url").to_dict()
-    # Download the files
-    df_urls.apply(lambda x: download_and_save_file(x["url"], x["file_name"]), axis=1)
-    # add file extensions
+    df_urls["freq"] = freq
     df_urls["extension"] = df_urls["file_name"].str.split(".").str[1]
+    return df_urls
+
+
+def download_all_files(df_urls):
+    df_urls["dl_filename"] = ""
+    # Download non-zips
+    query = df_urls["extension"] != "zip"
+    df_urls.loc[query, "dl_filename"] = df_urls.loc[query, :].apply(lambda x: download_and_save_file(x["url"], x["file_name"]), axis=1)
+    # Download zips
+    df_urls.loc[~query, "dl_filename"] = df_urls.loc[~query, :].apply(lambda x: download_zip_file(x["url"], x["file_name"]), axis=1)
+    df_urls["dl_fn_extension"] = df_urls["dl_filename"].str.split(".").str[1]
+    return df_urls
+
+
+def nominate_sheets_from_ss(df_urls):
     # Add sheet names
     df_urls["sheet_names"] = "None"
-    df_urls.loc[df_urls["extension"] == "xlsx", "sheet_names"] = df_urls.loc[
-        df_urls["extension"] == "xlsx", :
-    ].apply(lambda x: get_sheetnames_xlsx(Path("scratch") / x["file_name"]), axis=1)
-    if "xls" in df_urls["extension"].unique():
-        df_urls.loc[df_urls["extension"] == "xls", "sheet_names"] = df_urls.loc[
-            df_urls["extension"] == "xls", :
-        ].apply(lambda x: get_sheetnames_xls(Path("scratch") / x["file_name"]), axis=1)
+    df_urls.loc[df_urls["dl_fn_extension"] == "xlsx", "sheet_names"] = df_urls.loc[
+        df_urls["dl_fn_extension"] == "xlsx", :
+    ].apply(lambda x: get_sheetnames_xlsx(Path("scratch") / x["dl_filename"]), axis=1)
+    if "xls" in df_urls["dl_fn_extension"].unique():
+        df_urls.loc[df_urls["dl_fn_extension"] == "xls", "sheet_names"] = df_urls.loc[
+            df_urls["dl_fn_extension"] == "xls", :
+        ].apply(lambda x: get_sheetnames_xls(Path("scratch") / x["dl_filename"]), axis=1)
     df_urls["sheet_names"] = remove_bad_sheets(df_urls["sheet_names"])
-    df_urls["freq"] = freq
+    # stick only to the first sheet
+    df_urls["sheet_names"] = df_urls["sheet_names"].apply(lambda x: x[0])
     return df_urls
 
 
@@ -205,7 +212,7 @@ def process_quarterly_file(file_name, sheet_name):
     return df.drop(["variable", "pub_datetime", "estimate", "prices"], axis=1)
 
 
-def process_monthly_file(file_name, sheet_name):
+def process_monthly_triangle_file(file_name, sheet_name):
     df = pd.read_excel(Path("scratch") / file_name, sheet_name=sheet_name)
     df = df.dropna(how="all", axis=1)
     df = df.dropna(how="all", axis=0)
@@ -230,17 +237,43 @@ def process_monthly_file(file_name, sheet_name):
     return df
 
 
+def process_quarterly_triangle_file(file_name, sheet_name):
+    df = pd.read_excel(Path("scratch") / file_name, sheet_name=sheet_name)
+    df = df.dropna(how="all", axis=1)
+    df = df.dropna(how="all", axis=0)
+    # Drop the first col if doesn't contain "Relating" ("to Period")
+    if(not any(df[df.columns[0]].astype("str").str.contains("Relating"))):
+        df = df.drop(df.columns[0], axis=1)
+    code = df.columns[1].split("for ")[1][:4]
+    long_name = df.columns[1].split("-")[1].split("(")[0].strip()
+    measure = df.columns[1].split("-")[1].split("(")[1].replace(")", "")
+    df.columns = df.loc[4, :]
+    df = df.iloc[9:, :]
+    # fill in the "latest estimate" entry with a datetime
+    df = df[~pd.isna(df["Relating to Period"])].copy()
+    time_series_down = pd.to_datetime(df["Relating to Period"], errors="coerce")
+    time_series_down.iloc[-1] = time_series_down.iloc[-2] + pd.DateOffset(months=1)
+    df["Relating to Period"] = time_series_down
+    df = pd.melt(df, id_vars="Relating to Period", var_name="datetime")
+    df = df.rename(columns={"Relating to Period": "vintage"})
+    df["long_name"] = long_name
+    df["measure"] = measure
+    df["code"] = code
+    return df
+
+
 df_urls = combined_df_urls(config)
+df_urls = download_all_files(df_urls)
+df_urls = nominate_sheets_from_ss(df_urls)
 
-# Testing quarterly pipeline
-file_name = df_urls["file_name"].iloc[2]
-sheet_name = "2011 -"
+# Testing
+file_name = df_urls["dl_filename"].iloc[1]
+sheet_name = df_urls["sheet_names"].iloc[1]
 
-df = process_quarterly_file(df_urls["file_name"].iloc[2], "2011 -")
+# cannot reliably extract code, measure, long name from sheet
+# jobs06 has structure of monthly
+# can probably get one structure if can find first date time
+# entry under relating to period cell
 
-
-# Testing monthly pipeline
-file_name = df_urls["file_name"].iloc[-2]
-sheet_name = "triangle"
-
-df = process_monthly_file(file_name, sheet_name)
+df = process_monthly_triangle_file(file_name, sheet_name)
+df = process_quarterly_triangle_file(file_name, sheet_name)

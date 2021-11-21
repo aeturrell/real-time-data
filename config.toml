@@ -1,12 +1,12 @@
 # Keys
 title = "My TOML Config"
 
-# Datasets
-[[Q]]
-[Q.urls]
-gdp_expenditure = "https://www.ons.gov.uk/economy/grossdomesticproductgdp/datasets/realtimedatabaseforukgdpcomponentsfortheexpenditureapproachtothemeasureofgdp"
-gdp_income = "https://www.ons.gov.uk/economy/grossdomesticproductgdp/datasets/realtimedatabaseforukgdpcomponentsfortheincomeapproachtothemeasureofgdp"
-business_inv = "https://www.ons.gov.uk/economy/grossdomesticproductgdp/datasets/businessinvestmentrealtimedatabase"
+## Datasets
+#[[Q]]
+#[Q.urls]
+#gdp_expenditure = "https://www.ons.gov.uk/economy/grossdomesticproductgdp/datasets/realtimedatabaseforukgdpcomponentsfortheexpenditureapproachtothemeasureofgdp"
+#gdp_income = "https://www.ons.gov.uk/economy/grossdomesticproductgdp/datasets/realtimedatabaseforukgdpcomponentsfortheincomeapproachtothemeasureofgdp"
+#business_inv = "https://www.ons.gov.uk/economy/grossdomesticproductgdp/datasets/businessinvestmentrealtimedatabase"
 
 [[M]]
 [M.urls]
@@ -14,6 +14,7 @@ cla08 = "https://www.ons.gov.uk/employmentandlabourmarket/peoplenotinwork/outofw
 unem04 = "https://www.ons.gov.uk/employmentandlabourmarket/peoplenotinwork/unemployment/datasets/unemploymentraterevisionstriangleunem04"
 
 
-[[triangles]]
-[triangles.urls]
+[[Q]]
+[Q.urls]
 gdp_cvm = "https://www.ons.gov.uk/economy/grossdomesticproductgdp/datasets/revisionstrianglesforukgdpabmi"
+wkrfrc_jobs = "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/datasets/workforcejobsrevisionstrianglejobs06"
