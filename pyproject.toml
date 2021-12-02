@@ -17,6 +17,7 @@ xlrd = "^2.0.1"
 sqlite-utils = "^3.18"
 lxml = "^4.6.4"
 html5lib = "^1.1"
+pyarrow = "^6.0.1"
 
 [tool.poetry.dev-dependencies]
 

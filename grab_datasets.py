@@ -37,7 +37,14 @@ def find_files(url: str):
     hrefs = [a["href"] for a in soup.find_all("a")]
     hrefs = [a for a in hrefs if len(a.split(".")) > 1]
     hrefs = [
-        a for a in hrefs if (a.split(".")[1] == "xlsx" or a.split(".")[1] == "xls" or a.split(".")[1] == "zip" or a.split(".")[1] == "xlsm")
+        a
+        for a in hrefs
+        if (
+            a.split(".")[1] == "xlsx"
+            or a.split(".")[1] == "xls"
+            or a.split(".")[1] == "zip"
+            or a.split(".")[1] == "xlsm"
+        )
     ]
     return hrefs
 
@@ -61,7 +68,7 @@ def download_zip_file(file_url: str, in_file_name: str):
     files_to_extract = list(itertools.chain(*files_to_extract))
     for file in files_to_extract:
         zip.extract(file, path=Path("scratch"))
-    assert(len(files_to_extract) == 1)
+    assert len(files_to_extract) == 1
     # Tidy up by removing the zip
     os.remove(file_location)
     return files_to_extract[0]
@@ -111,7 +118,7 @@ def combined_df_urls(config):
         df_urls[key] = ""
     for freq in frequencies:
         for key, value in config[freq][0].items():
-            if(key!="urls"):
+            if key != "urls":
                 for inner_key, inner_val in value.items():
                     df_urls.loc[inner_key, key] = inner_val
     return df_urls
@@ -136,9 +143,13 @@ def download_all_files(df_urls):
     df_urls["dl_filename"] = ""
     # Download non-zips
     query = df_urls["extension"] != "zip"
-    df_urls.loc[query, "dl_filename"] = df_urls.loc[query, :].apply(lambda x: download_and_save_file(x["url"], x["file_name"]), axis=1)
+    df_urls.loc[query, "dl_filename"] = df_urls.loc[query, :].apply(
+        lambda x: download_and_save_file(x["url"], x["file_name"]), axis=1
+    )
     # Download zips
-    df_urls.loc[~query, "dl_filename"] = df_urls.loc[~query, :].apply(lambda x: download_zip_file(x["url"], x["file_name"]), axis=1)
+    df_urls.loc[~query, "dl_filename"] = df_urls.loc[~query, :].apply(
+        lambda x: download_zip_file(x["url"], x["file_name"]), axis=1
+    )
     df_urls["dl_fn_extension"] = df_urls["dl_filename"].str.split(".").str[1]
     return df_urls
 
@@ -149,14 +160,18 @@ def nominate_sheets_from_ss(df_urls):
     df_urls.loc[df_urls["dl_fn_extension"] == "xlsx", "sheet_names"] = df_urls.loc[
         df_urls["dl_fn_extension"] == "xlsx", :
     ].apply(lambda x: get_sheetnames_xlsx(Path("scratch") / x["dl_filename"]), axis=1)
-    if("xlsm" in df_urls["dl_fn_extension"].unique()):
+    if "xlsm" in df_urls["dl_fn_extension"].unique():
         df_urls.loc[df_urls["dl_fn_extension"] == "xlsm", "sheet_names"] = df_urls.loc[
             df_urls["dl_fn_extension"] == "xlsm", :
-        ].apply(lambda x: get_sheetnames_xlsx(Path("scratch") / x["dl_filename"]), axis=1)
+        ].apply(
+            lambda x: get_sheetnames_xlsx(Path("scratch") / x["dl_filename"]), axis=1
+        )
     if "xls" in df_urls["dl_fn_extension"].unique():
         df_urls.loc[df_urls["dl_fn_extension"] == "xls", "sheet_names"] = df_urls.loc[
             df_urls["dl_fn_extension"] == "xls", :
-        ].apply(lambda x: get_sheetnames_xls(Path("scratch") / x["dl_filename"]), axis=1)
+        ].apply(
+            lambda x: get_sheetnames_xls(Path("scratch") / x["dl_filename"]), axis=1
+        )
     df_urls["sheet_names"] = remove_bad_sheets(df_urls["sheet_names"])
     # stick only to the first sheet
     df_urls["sheet_names"] = df_urls["sheet_names"].apply(lambda x: x[0])
@@ -168,15 +183,28 @@ def process_triangle_file(df_urls_row):
     df = pd.read_excel(Path("scratch") / file_name, sheet_name=sheet_name)
     # Remove all the of the guff
     search_text = "Relating to Period"
+    alt_search_text = search_text + " (three months ending)"
     df = df.dropna(how="all", axis=1).dropna(how="all", axis=0)
-    dates_row = df[df == search_text].dropna(how="all", axis=1).dropna(how="all", axis=0).index.values
+    # work around for variations on 'relating to period'
+    dates_row = (
+        df[(df == search_text) | (df == alt_search_text)]
+        .dropna(how="all", axis=1)
+        .dropna(how="all", axis=0)
+        .index.values
+    )
     df = df.rename(columns=dict(zip(df.columns, df.loc[dates_row, :].values[0])))
-     # remove any lingering first cols
-    srch_txt_ix = list(df.columns).index(search_text)
-    if(srch_txt_ix!=0):
+    # remove any lingering first cols
+    try:
+        srch_txt_ix = list(df.columns).index(search_text)
+    except:
+        srch_txt_ix = list(df.columns).index(alt_search_text)
+        df = df.rename(columns={df.columns[srch_txt_ix]: search_text})
+    if srch_txt_ix != 0:
         df = df[df.columns[srch_txt_ix:]].copy()
     df[df.columns[0]] = pd.to_datetime(df[df.columns[0]], errors="coerce")
-    first_datetime_row = pd.to_datetime(df[df.columns[0]], errors="coerce").dropna().index.min()
+    first_datetime_row = (
+        pd.to_datetime(df[df.columns[0]], errors="coerce").dropna().index.min()
+    )
     df = df.loc[first_datetime_row:, :]
     # fill in the "latest estimate" entry with a datetime
     df = df[~pd.isna(df[search_text])].copy()
@@ -186,7 +214,7 @@ def process_triangle_file(df_urls_row):
     df = pd.melt(df, id_vars=search_text, var_name="datetime")
     df = df.rename(columns={search_text: "vintage"})
     df["value"] = pd.to_numeric(df["value"], errors="coerce")
-    if("Q" in str(df["datetime"].iloc[0])):
+    if "Q" in str(df["datetime"].iloc[0]):
         df["datetime"] = convert_yyyy_qn_to_datetime(df["datetime"].str.strip())
     df = df.dropna(subset=["value"])
     other_vars_to_store = ["long_name", "code", "short_name", "measure"]
@@ -194,11 +222,25 @@ def process_triangle_file(df_urls_row):
         df[var] = df_urls_row[var]
     return df
 
-
+# Get the urls of the revisions & downloaded them
 df_urls = combined_df_urls(config)
 df_urls = download_all_files(df_urls)
 df_urls = nominate_sheets_from_ss(df_urls)
 
-# Testing
-df_urls_row = df_urls.iloc[-1]
-df = process_triangle_file(df_urls_row)
+# Extract the data from the files and combine
+df = pd.concat(
+    [process_triangle_file(df_urls.iloc[i]) for i in range(len(df_urls))], axis=0
+)
+
+# Ensure the correct types are enforced
+type_dict = {
+    "long_name": "category",
+    "code": "category",
+    "short_name": "category",
+    "measure": "category",
+}
+for key, value in type_dict.items():
+    df[key] = df[key].astype(value)
+
+# save to file
+df.to_parquet(Path("scratch/realtimedata.parquet"))
