@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from pandas.tseries import offsets
 import toml
 from bs4 import BeautifulSoup
@@ -10,7 +11,6 @@ import re
 import zipfile
 import itertools
 import os
-from urllib.request import urlopen
 
 # Read local `config.toml` file.
 config = toml.load("config.toml")
@@ -37,7 +37,7 @@ def find_files(url: str):
     hrefs = [a["href"] for a in soup.find_all("a")]
     hrefs = [a for a in hrefs if len(a.split(".")) > 1]
     hrefs = [
-        a for a in hrefs if (a.split(".")[1] == "xlsx" or a.split(".")[1] == "xls" or a.split(".")[1] == "zip")
+        a for a in hrefs if (a.split(".")[1] == "xlsx" or a.split(".")[1] == "xls" or a.split(".")[1] == "zip" or a.split(".")[1] == "xlsm")
     ]
     return hrefs
 
@@ -102,10 +102,18 @@ def find_vintage_from_pub_datetime(df_in: pd.DataFrame):
 
 def combined_df_urls(config):
     df_urls = pd.DataFrame()
-    for freq in ["Q", "M"]:
+    frequencies = ["Q", "M"]
+    for freq in frequencies:
         df_urls = pd.concat(
             [df_urls, populate_dataframe_of_data_urls(config, freq)], axis=0
         )
+    for key, value in config[freq][0].items():
+        df_urls[key] = ""
+    for freq in frequencies:
+        for key, value in config[freq][0].items():
+            if(key!="urls"):
+                for inner_key, inner_val in value.items():
+                    df_urls.loc[inner_key, key] = inner_val
     return df_urls
 
 
@@ -141,6 +149,10 @@ def nominate_sheets_from_ss(df_urls):
     df_urls.loc[df_urls["dl_fn_extension"] == "xlsx", "sheet_names"] = df_urls.loc[
         df_urls["dl_fn_extension"] == "xlsx", :
     ].apply(lambda x: get_sheetnames_xlsx(Path("scratch") / x["dl_filename"]), axis=1)
+    if("xlsm" in df_urls["dl_fn_extension"].unique()):
+        df_urls.loc[df_urls["dl_fn_extension"] == "xlsm", "sheet_names"] = df_urls.loc[
+            df_urls["dl_fn_extension"] == "xlsm", :
+        ].apply(lambda x: get_sheetnames_xlsx(Path("scratch") / x["dl_filename"]), axis=1)
     if "xls" in df_urls["dl_fn_extension"].unique():
         df_urls.loc[df_urls["dl_fn_extension"] == "xls", "sheet_names"] = df_urls.loc[
             df_urls["dl_fn_extension"] == "xls", :
@@ -151,114 +163,35 @@ def nominate_sheets_from_ss(df_urls):
     return df_urls
 
 
-def combined_df_urls(config):
-    df_urls = pd.DataFrame()
-    for freq in ["Q", "M"]:
-        df_urls = pd.concat(
-            [df_urls, populate_dataframe_of_data_urls(config, freq)], axis=0
-        )
-    return df_urls
-
-
-def process_quarterly_file(file_name, sheet_name):
+def process_triangle_file(df_urls_row):
+    file_name, sheet_name = df_urls_row["dl_filename"], df_urls_row["sheet_names"]
     df = pd.read_excel(Path("scratch") / file_name, sheet_name=sheet_name)
-    df = df.dropna(how="all", axis=1)
-    if ":" in df.columns[1]:
-        long_name, measure = df.columns[1].split(": ")
-    else:
-        long_name, measure = df.columns[1], ""
-    df = df.dropna(how="all", axis=0)
-    units = df.iloc[0, 1]
-    df = df.iloc[2:, :]
-    if "Annual" in df.iloc[0, 1]:
-        df = df.iloc[1:, :]
-    # account for case where there's an extra row for prices
-    if any(df.iloc[0].fillna("").str.lower().str.contains("prices")):
-        df.iloc[0] = df.iloc[0].ffill()  # forward fill empty prices cols
-        df.columns = (
-            df.loc[3].fillna("")
-            + ";"
-            + df.loc[4].fillna("")
-            + ";"
-            + df.loc[5].fillna("")
-        )
-        df = df.iloc[3:, :]
-    else:
-        df.columns = ";" + df.loc[3].fillna("") + ";" + df.loc[4].fillna("")
-        df = df.iloc[2:, :]
-    df = df.rename(columns={";;": "datetime"})
-    df = pd.melt(df, id_vars="datetime")
-    df["datetime"] = convert_yyyy_qn_to_datetime(df["datetime"].str.strip())
-    df[["prices", "estimate", "pub_datetime"]] = df["variable"].str.split(
-        ";", expand=True
-    )
-    df["pub_datetime"] = convert_yyyy_qn_to_datetime(df["pub_datetime"])
-    # clean up est col
-    df["estimate"] = df["estimate"].str.strip()
-    df = find_vintage_from_pub_datetime(df)
-    df[["long_name", "measure", "units", "code"]] = (
-        long_name,
-        measure,
-        units,
-        sheet_name,
-    )
-    # Set up a special case for the unpredictable case of Business Investment
-    if "Total Business Investment" in long_name:
-        _, long_name, measure = re.split(r"(.*?\s.*?\s.*?)\s", long_name)
-        df["code"] = "NPEL"
-        df["long_name"] = long_name
-        df["measure"] = measure
-    df["units"] = df["prices"] + " ; " + df["units"]
-    return df.drop(["variable", "pub_datetime", "estimate", "prices"], axis=1)
-
-
-def process_monthly_triangle_file(file_name, sheet_name):
-    df = pd.read_excel(Path("scratch") / file_name, sheet_name=sheet_name)
-    df = df.dropna(how="all", axis=1)
-    df = df.dropna(how="all", axis=0)
-    code = df.columns[0].split(":")[0]
-    long_name = df.columns[0].split("for")[1].strip()
-    measure = df.columns[0].split("for")[1].strip()
-    df.columns = df.loc[4, :]
-    df = df.iloc[1:, :]
-    df = df.rename(
-        columns={"Relating to Period (three months ending)": "Relating to Period"}
-    )
+    # Remove all the of the guff
+    search_text = "Relating to Period"
+    df = df.dropna(how="all", axis=1).dropna(how="all", axis=0)
+    dates_row = df[df == search_text].dropna(how="all", axis=1).dropna(how="all", axis=0).index.values
+    df = df.rename(columns=dict(zip(df.columns, df.loc[dates_row, :].values[0])))
+     # remove any lingering first cols
+    srch_txt_ix = list(df.columns).index(search_text)
+    if(srch_txt_ix!=0):
+        df = df[df.columns[srch_txt_ix:]].copy()
+    df[df.columns[0]] = pd.to_datetime(df[df.columns[0]], errors="coerce")
+    first_datetime_row = pd.to_datetime(df[df.columns[0]], errors="coerce").dropna().index.min()
+    df = df.loc[first_datetime_row:, :]
     # fill in the "latest estimate" entry with a datetime
-    time_series_down = pd.to_datetime(df["Relating to Period"], errors="coerce")
-    time_series_down.iloc[-1] = time_series_down.iloc[-2] + pd.DateOffset(months=1)
-    df["Relating to Period"] = time_series_down
-    df = df[~pd.isna(df["Relating to Period"])]
-    df = pd.melt(df, id_vars="Relating to Period", var_name="datetime")
-    df = df.rename(columns={"Relating to Period": "vintage"})
-    df["long_name"] = long_name
-    df["measure"] = measure
-    df["code"] = code
-    return df
-
-
-def process_quarterly_triangle_file(file_name, sheet_name):
-    df = pd.read_excel(Path("scratch") / file_name, sheet_name=sheet_name)
-    df = df.dropna(how="all", axis=1)
-    df = df.dropna(how="all", axis=0)
-    # Drop the first col if doesn't contain "Relating" ("to Period")
-    if(not any(df[df.columns[0]].astype("str").str.contains("Relating"))):
-        df = df.drop(df.columns[0], axis=1)
-    code = df.columns[1].split("for ")[1][:4]
-    long_name = df.columns[1].split("-")[1].split("(")[0].strip()
-    measure = df.columns[1].split("-")[1].split("(")[1].replace(")", "")
-    df.columns = df.loc[4, :]
-    df = df.iloc[9:, :]
-    # fill in the "latest estimate" entry with a datetime
-    df = df[~pd.isna(df["Relating to Period"])].copy()
-    time_series_down = pd.to_datetime(df["Relating to Period"], errors="coerce")
-    time_series_down.iloc[-1] = time_series_down.iloc[-2] + pd.DateOffset(months=1)
-    df["Relating to Period"] = time_series_down
-    df = pd.melt(df, id_vars="Relating to Period", var_name="datetime")
-    df = df.rename(columns={"Relating to Period": "vintage"})
-    df["long_name"] = long_name
-    df["measure"] = measure
-    df["code"] = code
+    df = df[~pd.isna(df[search_text])].copy()
+    time_series_down = pd.to_datetime(df[search_text], errors="coerce")
+    time_series_down.iloc[-1] = time_series_down.iloc[-2] + pd.DateOffset(months=3)
+    df[search_text] = time_series_down
+    df = pd.melt(df, id_vars=search_text, var_name="datetime")
+    df = df.rename(columns={search_text: "vintage"})
+    df["value"] = pd.to_numeric(df["value"], errors="coerce")
+    if("Q" in str(df["datetime"].iloc[0])):
+        df["datetime"] = convert_yyyy_qn_to_datetime(df["datetime"].str.strip())
+    df = df.dropna(subset=["value"])
+    other_vars_to_store = ["long_name", "code", "short_name", "measure"]
+    for var in other_vars_to_store:
+        df[var] = df_urls_row[var]
     return df
 
 
@@ -267,13 +200,5 @@ df_urls = download_all_files(df_urls)
 df_urls = nominate_sheets_from_ss(df_urls)
 
 # Testing
-file_name = df_urls["dl_filename"].iloc[1]
-sheet_name = df_urls["sheet_names"].iloc[1]
-
-# cannot reliably extract code, measure, long name from sheet
-# jobs06 has structure of monthly
-# can probably get one structure if can find first date time
-# entry under relating to period cell
-
-df = process_monthly_triangle_file(file_name, sheet_name)
-df = process_quarterly_triangle_file(file_name, sheet_name)
+df_urls_row = df_urls.iloc[-1]
+df = process_triangle_file(df_urls_row)

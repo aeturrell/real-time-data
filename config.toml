@@ -12,9 +12,37 @@ title = "My TOML Config"
 [M.urls]
 cla08 = "https://www.ons.gov.uk/employmentandlabourmarket/peoplenotinwork/outofworkbenefits/datasets/claimantcountrevisionstrianglecla02"
 unem04 = "https://www.ons.gov.uk/employmentandlabourmarket/peoplenotinwork/unemployment/datasets/unemploymentraterevisionstriangleunem04"
-
+ios = "https://www.ons.gov.uk/economy/economicoutputandproductivity/output/datasets/indexofservicesrevisionstriangles"
+[M.long_name]
+cla08 = "UK claimant count"
+unem04 = "UK unemployment rate"
+ios = "Index of Services"
+[M.code]
+cla08 = "cla08"
+unem04 = "unem04"
+ios = "ios"
+[M.short_name]
+cla08 = "Claimants"
+unem04 = "Unemployment"
+ios = "services"
+[M.measure]
+cla08 = "Number"
+unem04 = "Percent"
+ios = "Percent MoM"
 
 [[Q]]
 [Q.urls]
-gdp_cvm = "https://www.ons.gov.uk/economy/grossdomesticproductgdp/datasets/revisionstrianglesforukgdpabmi"
-wkrfrc_jobs = "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/datasets/workforcejobsrevisionstrianglejobs06"
+ihyq = "https://www.ons.gov.uk/economy/grossdomesticproductgdp/datasets/revisionstrianglesforukgdpabmi"
+jobs06 = "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/datasets/workforcejobsrevisionstrianglejobs06"
+[Q.long_name]
+ihyq = "GDP chained volume measure"
+jobs06 = "UK workforce jobs"
+[Q.code]
+ihyq = "ihyq"
+jobs06 = "jobs06"
+[Q.short_name]
+ihyq = "GDP"
+jobs06 = "Employment"
+[Q.measure]
+ihyq = "Percent change, QoQ; CVM, SA"
+jobs06 = "Number"
