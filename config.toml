@@ -1,48 +1,105 @@
 # Keys
-title = "My TOML Config"
+title = "Real time data"
 
-## Datasets
-#[[Q]]
-#[Q.urls]
-#gdp_expenditure = "https://www.ons.gov.uk/economy/grossdomesticproductgdp/datasets/realtimedatabaseforukgdpcomponentsfortheexpenditureapproachtothemeasureofgdp"
-#gdp_income = "https://www.ons.gov.uk/economy/grossdomesticproductgdp/datasets/realtimedatabaseforukgdpcomponentsfortheincomeapproachtothemeasureofgdp"
-#business_inv = "https://www.ons.gov.uk/economy/grossdomesticproductgdp/datasets/businessinvestmentrealtimedatabase"
 
 [[M]]
 [M.urls]
 cla08 = "https://www.ons.gov.uk/employmentandlabourmarket/peoplenotinwork/outofworkbenefits/datasets/claimantcountrevisionstrianglecla02"
 unem04 = "https://www.ons.gov.uk/employmentandlabourmarket/peoplenotinwork/unemployment/datasets/unemploymentraterevisionstriangleunem04"
 ios = "https://www.ons.gov.uk/economy/economicoutputandproductivity/output/datasets/indexofservicesrevisionstriangles"
+iop = "https://www.ons.gov.uk/economy/economicoutputandproductivity/output/datasets/revisionstotheindexofproduction"
+iom = "https://www.ons.gov.uk/economy/economicoutputandproductivity/output/datasets/revisionstotheindexofproduction"
+rsi = "https://www.ons.gov.uk/businessindustryandtrade/retailindustry/datasets/retailsalesrevisionstriangles1monthgrowth"
+con = "https://www.ons.gov.uk/businessindustryandtrade/constructionindustry/datasets/outputintheconstructionindustryrevisionstriangle1monthgrowth"
+exp = "https://www.ons.gov.uk/economy/nationalaccounts/balanceofpayments/datasets/totaltradeexportsuktraderevisions"
+imp = "https://www.ons.gov.uk/economy/nationalaccounts/balanceofpayments/datasets/totaltradeimportsuktraderevisions"
 [M.long_name]
 cla08 = "UK claimant count"
 unem04 = "UK unemployment rate"
 ios = "Index of Services"
+iop = "Index of Production"
+iom = "Index of Manufacturing"
+rsi = "Retail Sales Index"
+con = "Construction"
+exp = "Total trade exports"
+imp = "Total trade imports"
 [M.code]
 cla08 = "cla08"
 unem04 = "unem04"
 ios = "ios"
+iop = "iop"
+iom = "iom"
+rsi = "rsi"
+con = "con"
+exp = "exp"
+imp = "imp"
 [M.short_name]
 cla08 = "Claimants"
 unem04 = "Unemployment"
 ios = "services"
+iop = "production"
+iom = "manufacturing"
+rsi = "sales"
+con = "construction"
+exp = "Exports"
+imp = "Imports"
 [M.measure]
 cla08 = "Number"
 unem04 = "Percent"
 ios = "Percent MoM"
+iop = "Percent MoM"
+iom = "Percent MoM"
+rsi = "Percent MoM"
+con = "Percent MoM"
+exp = "CP; SA"
+imp = "CP; SA"
 
 [[Q]]
 [Q.urls]
 ihyq = "https://www.ons.gov.uk/economy/grossdomesticproductgdp/datasets/revisionstrianglesforukgdpabmi"
 jobs06 = "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/datasets/workforcejobsrevisionstrianglejobs06"
+inv = "https://www.ons.gov.uk/economy/grossdomesticproductgdp/datasets/revisionstogrossfixedcapitalformationandbusinessinvestment"
 [Q.long_name]
 ihyq = "GDP chained volume measure"
 jobs06 = "UK workforce jobs"
+inv = "Total Business Investment"
 [Q.code]
 ihyq = "ihyq"
 jobs06 = "jobs06"
+inv = "inv"
 [Q.short_name]
 ihyq = "GDP"
 jobs06 = "Employment"
+inv = "Business Investment"
 [Q.measure]
 ihyq = "Percent change, QoQ; CVM, SA"
 jobs06 = "Number"
+inv = "Percent change, QoQ; CVM, SA"
+
+# Non-revised series
+[[nonrev]]
+[nonrev.long_name]
+cpi = "Consumer Price Inflation"
+ppii = "Producer Price Inflation Inputs"
+ppio = "Producer Price Inflation Outputs"
+awe = "Average Weekly Earnings"
+[nonrev.short_name]
+cpi = "Inflation"
+ppii = "Producer Inflation Inputs"
+ppio = "Producer Inflation Ouptputs"
+awe = "Earnings"
+[nonrev.code]
+cpi = "D7G7"
+ppii = "GHIP"
+ppio = "GB7S"
+awe = "KAC2"
+[nonrev.dataset]
+cpi = "MM23"
+ppii = "MM22"
+ppio = "MM22"
+awe = "EMP"
+[nonrev.measure]
+cpi = "Percent, YoY"
+ppii = "Index"
+ppio = "Index"
+awe = "Percent, YoY"

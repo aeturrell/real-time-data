@@ -1,20 +1,21 @@
 import pandas as pd
-import numpy as np
-from pandas.tseries import offsets
 import toml
 from bs4 import BeautifulSoup
 import requests
+from rich import print_json
 from pathlib import Path, PosixPath
 from openpyxl import load_workbook
 import xlrd
-import re
 import zipfile
 import itertools
 import os
 
+OTHER_VARS_TO_STORE = ["long_name", "code", "short_name", "measure"]
+
+
 # Read local `config.toml` file.
 config = toml.load("config.toml")
-print(config)
+print_json(data=config)
 
 
 def get_sheetnames_xlsx(filepath: PosixPath):
@@ -49,7 +50,7 @@ def find_files(url: str):
     return hrefs
 
 
-def download_zip_file(file_url: str, in_file_name: str):
+def download_zip_file(file_url: str, in_file_name: str, short_name: str):
     """Downloads a zip file from given url.
 
     :param file_url: url
@@ -60,14 +61,18 @@ def download_zip_file(file_url: str, in_file_name: str):
     :rtype: str
     """
     _ = download_and_save_file(file_url, in_file_name)
-    names_to_keep = ["quarterly", "m on m"]
+    names_to_keep = ["quarterly", "m on m", "1 month"]
     file_location = Path("scratch") / in_file_name
-    zip = zipfile.ZipFile(file_location)
-    names = [name for name in zip.namelist()]
+    zip_object = zipfile.ZipFile(file_location)
+    names = [name for name in zip_object.namelist()]
     files_to_extract = [[x for x in names if y in x.lower()] for y in names_to_keep]
     files_to_extract = list(itertools.chain(*files_to_extract))
+    # This picks out production or manufacturing which are combined, for some reason,
+    # in the Index of Production zip file
+    if len(files_to_extract) > 1:
+        files_to_extract = [x for x in files_to_extract if short_name in x.lower()]
     for file in files_to_extract:
-        zip.extract(file, path=Path("scratch"))
+        zip_object.extract(file, path=Path("scratch"))
     assert len(files_to_extract) == 1
     # Tidy up by removing the zip
     os.remove(file_location)
@@ -148,7 +153,7 @@ def download_all_files(df_urls):
     )
     # Download zips
     df_urls.loc[~query, "dl_filename"] = df_urls.loc[~query, :].apply(
-        lambda x: download_zip_file(x["url"], x["file_name"]), axis=1
+        lambda x: download_zip_file(x["url"], x["file_name"], x["short_name"]), axis=1
     )
     df_urls["dl_fn_extension"] = df_urls["dl_filename"].str.split(".").str[1]
     return df_urls
@@ -176,6 +181,19 @@ def nominate_sheets_from_ss(df_urls):
     # stick only to the first sheet
     df_urls["sheet_names"] = df_urls["sheet_names"].apply(lambda x: x[0])
     return df_urls
+
+
+def enforce_types(df):
+    # Ensure the correct types are enforced
+    type_dict = {
+        "long_name": "category",
+        "code": "category",
+        "short_name": "category",
+        "measure": "category",
+    }
+    for key, value in type_dict.items():
+        df[key] = df[key].astype(value)
+    return df
 
 
 def process_triangle_file(df_urls_row):
@@ -217,10 +235,53 @@ def process_triangle_file(df_urls_row):
     if "Q" in str(df["datetime"].iloc[0]):
         df["datetime"] = convert_yyyy_qn_to_datetime(df["datetime"].str.strip())
     df = df.dropna(subset=["value"])
-    other_vars_to_store = ["long_name", "code", "short_name", "measure"]
-    for var in other_vars_to_store:
+    for var in OTHER_VARS_TO_STORE:
         df[var] = df_urls_row[var]
+    return enforce_types(df)
+
+
+def get_ons_series(dataset, code):
+    url = f"https://api.ons.gov.uk/timeseries/{code}/dataset/{dataset}/data"
+    # Get the data from the ONS API:
+    json_data = requests.get(url).json()
+    # Prep the data for a quick plot
+    title = json_data["description"]["title"]
+    df = (
+        pd.DataFrame(pd.json_normalize(json_data["months"]))
+        .assign(
+            date=lambda x: pd.to_datetime(x["date"]),
+            value=lambda x: pd.to_numeric(x["value"]),
+        )
+        .set_index("date")
+    )
+    df["title"] = title
     return df
+
+
+def populate_nonrev_series(series_name: str):
+    xf = get_ons_series(
+        config["nonrev"][0]["dataset"][series_name],
+        config["nonrev"][0]["code"][series_name],
+    )
+    xf = xf.reset_index()
+    xf["vintage"] = xf["date"]
+    for var in OTHER_VARS_TO_STORE:
+        xf[var] = config["nonrev"][0][var][series_name]
+    xf = xf.drop(
+        ["label", "month", "quarter", "sourceDataset", "updateDate", "year", "title"],
+        axis=1,
+    )
+    xf = xf.rename(columns={"date": "datetime"})
+    return xf
+
+
+def get_all_non_rev_series():
+    xf = pd.DataFrame()
+    for name in config["nonrev"][0]["dataset"].keys():
+        temp_df = populate_nonrev_series(name)
+        xf = pd.concat([xf, temp_df], axis=0)
+    return enforce_types(xf)
+
 
 # Get the urls of the revisions & downloaded them
 df_urls = combined_df_urls(config)
@@ -232,15 +293,11 @@ df = pd.concat(
     [process_triangle_file(df_urls.iloc[i]) for i in range(len(df_urls))], axis=0
 )
 
-# Ensure the correct types are enforced
-type_dict = {
-    "long_name": "category",
-    "code": "category",
-    "short_name": "category",
-    "measure": "category",
-}
-for key, value in type_dict.items():
-    df[key] = df[key].astype(value)
+# Pick up the non-revised data
+xf = get_all_non_rev_series()
+df = pd.concat([df, xf], axis=0)
+
+# Add in the various cuts of GDP (?)
 
 # save to file
 df.to_parquet(Path("scratch/realtimedata.parquet"))
