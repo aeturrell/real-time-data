@@ -2,7 +2,7 @@ import pandas as pd
 import toml
 from bs4 import BeautifulSoup
 import requests
-from rich import print_json
+# from rich import print_json
 from pathlib import Path, PosixPath
 from openpyxl import load_workbook
 import xlrd
@@ -15,7 +15,7 @@ OTHER_VARS_TO_STORE = ["long_name", "code", "short_name", "measure"]
 
 # Read local `config.toml` file.
 config = toml.load("config.toml")
-print_json(data=config)
+# print_json(data=config)
 
 
 def get_sheetnames_xlsx(filepath: PosixPath):
@@ -29,7 +29,7 @@ def get_sheetnames_xls(filepath: PosixPath):
 
 
 def remove_bad_sheets(series: pd.Series):
-    return series.apply(lambda x: [el for el in x if "triangle" in el])
+    return series.apply(lambda x: [el for el in x if "triangle" in el.lower()])
 
 
 def find_files(url: str):
@@ -202,21 +202,27 @@ def process_triangle_file(df_urls_row):
     # Remove all the of the guff
     search_text = "Relating to Period"
     alt_search_text = search_text + " (three months ending)"
+    alt_alt_search_text = "Relating to period"
     df = df.dropna(how="all", axis=1).dropna(how="all", axis=0)
     # work around for variations on 'relating to period'
     dates_row = (
-        df[(df == search_text) | (df == alt_search_text)]
+        df[(df == search_text) | (df == alt_search_text) | (df == alt_alt_search_text)]
         .dropna(how="all", axis=1)
         .dropna(how="all", axis=0)
         .index.values
     )
     df = df.rename(columns=dict(zip(df.columns, df.loc[dates_row, :].values[0])))
     # remove any lingering first cols
-    try:
+    if search_text in list(df.columns):
         srch_txt_ix = list(df.columns).index(search_text)
-    except:
+    elif alt_search_text in list(df.columns):
         srch_txt_ix = list(df.columns).index(alt_search_text)
         df = df.rename(columns={df.columns[srch_txt_ix]: search_text})
+    elif alt_alt_search_text in list(df.columns):
+        srch_txt_ix = list(df.columns).index(alt_alt_search_text)
+        df = df.rename(columns={df.columns[srch_txt_ix]: search_text})
+    else:
+        raise ValueError("None of the names associated with dates can be found in the spreadsheet")
     if srch_txt_ix != 0:
         df = df[df.columns[srch_txt_ix:]].copy()
     df[df.columns[0]] = pd.to_datetime(df[df.columns[0]], errors="coerce")
