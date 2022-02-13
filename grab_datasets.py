@@ -9,6 +9,7 @@ import xlrd
 import zipfile
 import itertools
 import os
+from loguru import logger
 
 OTHER_VARS_TO_STORE = ["long_name", "code", "short_name", "measure"]
 
@@ -50,7 +51,7 @@ def find_files(url: str):
     return hrefs
 
 
-def download_zip_file(file_url: str, in_file_name: str, short_name: str):
+def download_zip_file(file_url: str, in_file_name: str, short_name: str, code: str):
     """Downloads a zip file from given url.
 
     :param file_url: url
@@ -61,12 +62,13 @@ def download_zip_file(file_url: str, in_file_name: str, short_name: str):
     :rtype: str
     """
     _ = download_and_save_file(file_url, in_file_name)
-    names_to_keep = ["quarterly", "m on m", "1 month"]
+    names_to_keep = ["quarterly", "m on m", "1 month", code]
     file_location = Path("scratch") / in_file_name
     zip_object = zipfile.ZipFile(file_location)
-    names = [name for name in zip_object.namelist()]
+    # Work around introduced because looking for code picks up some cases twice (eg IOS is in both 3M on 3M on M on M)
+    names = [name for name in zip_object.namelist() if "3m on 3m" not in name.lower()]
     files_to_extract = [[x for x in names if y in x.lower()] for y in names_to_keep]
-    files_to_extract = list(itertools.chain(*files_to_extract))
+    files_to_extract = list(set(itertools.chain(*files_to_extract)))
     # This picks out production or manufacturing which are combined, for some reason,
     # in the Index of Production zip file
     if len(files_to_extract) > 1:
@@ -83,12 +85,12 @@ def download_and_save_file(file_url: str, file_name: str):
     # Download the file from the top of the list
     file_location = Path("scratch") / file_name
     if file_location.is_file():
-        print("Skipping download; file already exists")
+        logger.info(f"Skipping download of {file_name}; file already exists")
     else:
         r = requests.get("https://www.ons.gov.uk" + file_url, stream=True)
         with open(Path("scratch") / file_name, "wb") as f:
             f.write(r.content)
-    print("Success: file downloaded")
+    logger.info(f"Success: file download of {file_name} complete")
     return file_name
 
 
@@ -153,7 +155,7 @@ def download_all_files(df_urls):
     )
     # Download zips
     df_urls.loc[~query, "dl_filename"] = df_urls.loc[~query, :].apply(
-        lambda x: download_zip_file(x["url"], x["file_name"], x["short_name"]), axis=1
+        lambda x: download_zip_file(x["url"], x["file_name"], x["short_name"], x["code"]), axis=1
     )
     df_urls["dl_fn_extension"] = df_urls["dl_filename"].str.split(".").str[1]
     return df_urls
@@ -197,6 +199,7 @@ def enforce_types(df):
 
 
 def process_triangle_file(df_urls_row):
+    logger.info(f"Processing {df_urls_row.name}")
     file_name, sheet_name = df_urls_row["dl_filename"], df_urls_row["sheet_names"]
     df = pd.read_excel(Path("scratch") / file_name, sheet_name=sheet_name)
     # Remove all the of the guff
@@ -225,9 +228,12 @@ def process_triangle_file(df_urls_row):
         raise ValueError("None of the names associated with dates can be found in the spreadsheet")
     if srch_txt_ix != 0:
         df = df[df.columns[srch_txt_ix:]].copy()
-    df[df.columns[0]] = pd.to_datetime(df[df.columns[0]], errors="coerce")
+    format_datetime = "%Y-%m-%d"
+    if(any([x in df_urls_row["code"] for x in ["abjr", "npqt", "ihyq"]])):
+        format_datetime = "%b-%y"
+    df[df.columns[0]] = pd.to_datetime(df[df.columns[0]], errors="coerce", format=format_datetime)
     first_datetime_row = (
-        pd.to_datetime(df[df.columns[0]], errors="coerce").dropna().index.min()
+        pd.to_datetime(df[df.columns[0]], errors="coerce", format=format_datetime).dropna().index.min()
     )
     df = df.loc[first_datetime_row:, :]
     # fill in the "latest estimate" entry with a datetime
@@ -281,7 +287,7 @@ def populate_nonrev_series(series_name: str):
     return xf
 
 
-def get_all_non_rev_series():
+def get_all_non_rev_series(config):
     xf = pd.DataFrame()
     for name in config["nonrev"][0]["dataset"].keys():
         temp_df = populate_nonrev_series(name)
@@ -300,10 +306,17 @@ df = pd.concat(
 )
 
 # Pick up the non-revised data
-xf = get_all_non_rev_series()
+xf = get_all_non_rev_series(config)
 df = pd.concat([df, xf], axis=0)
 
 # Add in the various cuts of GDP (?)
+
+
+# Prep to write to file
+df["datetime"] = pd.to_datetime(df["datetime"], errors="coerce")  # Some to check here
+cat_cols = ["long_name", "code", "short_name", "measure"]
+for col in cat_cols:
+    df[col] = df[col].astype("category")
 
 # save to file
 df.to_parquet(Path("scratch/realtimedata.parquet"))
