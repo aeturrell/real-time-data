@@ -1,6 +1,0 @@
-name: realtimedata
-channels:
-  - defaults
-dependencies:
-  - pip
-  - python=3.9

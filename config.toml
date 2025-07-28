@@ -1,7 +1,6 @@
 # Keys
 title = "Real time data"
 
-
 [[M]]
 [M.urls]
 cla08 = "https://www.ons.gov.uk/employmentandlabourmarket/peoplenotinwork/outofworkbenefits/datasets/claimantcountrevisionstrianglecla02"

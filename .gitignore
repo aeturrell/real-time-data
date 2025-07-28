@@ -1,6 +1,9 @@
 scratch/*
 !scratch/.gitkeep
+logs/*
+!logs/.gitkeep
 .DS_store
+.vscode/settings.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
