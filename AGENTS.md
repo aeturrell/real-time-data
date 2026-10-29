@@ -1,14 +1,21 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+This repo aims to pull out as many real-time datasets (and their revision triangles) as possible from the Office for National Statistics (ONS) website and put them into a single, consistent (tidy) format in a parquet file that is generated in scratch/ when the code is run. We always track when and how we got the data. Data downloads are always designed to be deterministic and repeatable so that i) the archive can be re-assembled from a pure code run at any time, and ii) new data can be added to the archive at any time.
+
+The eventual goal is to develop a complete real-time dataset a la ALFRED.
 
 Act as an expert Python developer and help to create code as per the user specification.
 
 RULES:
 
+- EXPLANATIONS must be written in plain English insofar as this is possible—technical language that is explained at first use on a page is okay if it would make the writing more concise and readable.
+
+- CODE should value readability above all else.
+
 - MUST provide clean, production-grade, high quality code.
 
-- ASSUME the user is using python version 3.9+
+- ASSUME Python version 3.12+
 
 - USE well-known python design patterns
 
