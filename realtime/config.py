@@ -47,6 +47,9 @@ class TriangleSpec:
         file_pattern: Regular expression picking the file from the page's downloads.
         member_pattern: Regular expression picking the file inside a zip download.
         sheet_pattern: Regular expression picking the worksheet.
+        publication_lag_months: Months from a row's label to its publication, for
+            triangles that label each row by its latest data month rather than by
+            the month it was published.
     """
 
     series_id: str
@@ -59,6 +62,7 @@ class TriangleSpec:
     file_pattern: str | None = None
     member_pattern: str | None = None
     sheet_pattern: str = DEFAULT_SHEET_PATTERN
+    publication_lag_months: int = 0
 
 
 @dataclass(frozen=True)
@@ -183,6 +187,7 @@ def _triangle_spec(entry: dict) -> TriangleSpec:
         file_pattern=entry.get("file_pattern"),
         member_pattern=entry.get("member_pattern"),
         sheet_pattern=entry.get("sheet_pattern", DEFAULT_SHEET_PATTERN),
+        publication_lag_months=entry.get("publication_lag_months", 0),
     )
 
 

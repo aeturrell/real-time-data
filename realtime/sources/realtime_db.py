@@ -14,6 +14,11 @@ publication month:
 
 Only the publication month is known, so each vintage date is the last day of that
 month, with precision "month".
+
+A few labels in the ONS files are typing mistakes ("Mar-62" between "Feb-69" and
+"Apr-69", for example). A label that does not fall between its neighbours is
+replaced by the month before the next column's, the latest it could have been
+published, and the repair is logged.
 """
 
 import re
@@ -155,7 +160,8 @@ def read_database(sheet: pd.DataFrame) -> pd.DataFrame:
     Raises:
         ValueError: If no row of publication labels is found.
     """
-    header_row, vintage_columns = _find_header(sheet)
+    header_row, labelled_columns = _find_header(sheet)
+    vintage_columns = repair_out_of_order(labelled_columns)
     label_column = _find_label_column(sheet, header_row)
     period_rows = {
         row: period
@@ -205,6 +211,61 @@ def _find_header(sheet: pd.DataFrame) -> tuple[int, dict[int, pd.Period]]:
     if len(columns) < MIN_VINTAGE_COLUMNS:
         raise ValueError("No row of publication labels found in worksheet")
     return header_row, columns
+
+
+def repair_out_of_order(columns: dict[int, pd.Period]) -> dict[int, pd.Period]:
+    """Replaces publication months that do not follow on from their neighbours.
+
+    Columns are checked in order against the (already repaired) previous column. A
+    month is kept if it is later than the previous one and no later than the next
+    (a next month that is itself earlier than the previous one is ignored as the
+    mistake). Otherwise it becomes the month before the next column's, or the
+    previous column's month if that is no earlier.
+
+    Args:
+        columns: Column positions mapped to the publication months their labels give.
+
+    Returns:
+        The columns with out-of-order months replaced.
+    """
+    positions = sorted(columns)
+    repaired = {positions[0]: columns[positions[0]]} if positions else {}
+    for index, column in enumerate(positions[1:], start=1):
+        previous = repaired[positions[index - 1]]
+        month = columns[column]
+        following = (
+            columns[positions[index + 1]] if index + 1 < len(positions) else None
+        )
+        if _follows_on(previous, month, following):
+            repaired[column] = month
+            continue
+        repaired[column] = (
+            previous if following is None else max(following - 1, previous)
+        )
+        logger.warning(
+            f"Column {column}: publication month {month} is out of order after "
+            f"{previous}; using {repaired[column]}"
+        )
+    return repaired
+
+
+def _follows_on(
+    previous: pd.Period, month: pd.Period, following: pd.Period | None
+) -> bool:
+    """Checks whether a publication month fits between its neighbours.
+
+    Args:
+        previous: The previous column's (repaired) month.
+        month: This column's month.
+        following: The next column's month, if there is one.
+
+    Returns:
+        True if the month is later than the previous one and no later than the next,
+        or the next one is itself out of order.
+    """
+    if month <= previous:
+        return False
+    return following is None or following <= previous or month <= following
 
 
 def _find_label_column(sheet: pd.DataFrame, header_row: int) -> int:

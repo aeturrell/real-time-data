@@ -2,7 +2,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from realtime.sources.realtime_db import read_database, vintage_month_of_label
+from realtime.sources.realtime_db import (
+    read_database,
+    repair_out_of_order,
+    vintage_month_of_label,
+)
 
 NAN = np.nan
 
@@ -49,3 +53,29 @@ def test_read_database_takes_columns_as_vintages_and_rows_as_quarters() -> None:
     assert len(long) == 2
     assert set(long["vintage_month"]) == {pd.Period("1998-11"), pd.Period("1998-12")}
     assert set(long["reference_period"]) == {pd.Period("1998Q2", "Q-DEC")}
+
+
+def test_repair_out_of_order_fixes_typing_mistakes_from_neighbours() -> None:
+    months = {
+        1: pd.Period("1969-02", "M"),
+        2: pd.Period("1962-03", "M"),
+        3: pd.Period("1969-04", "M"),
+        4: pd.Period("1969-04", "M"),
+        5: pd.Period("1969-06", "M"),
+    }
+    repaired = repair_out_of_order(months)
+    assert repaired[2] == pd.Period("1969-03", "M")
+    assert repaired[4] == pd.Period("1969-05", "M")
+    assert repaired[1] == months[1]
+    assert repaired[3] == months[3]
+    assert repaired[5] == months[5]
+
+
+def test_repair_out_of_order_keeps_a_column_before_a_mistaken_one() -> None:
+    months = {
+        1: pd.Period("1969-01", "M"),
+        2: pd.Period("1969-02", "M"),
+        3: pd.Period("1962-03", "M"),
+        4: pd.Period("1969-04", "M"),
+    }
+    assert repair_out_of_order(months)[2] == months[2]

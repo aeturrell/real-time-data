@@ -459,6 +459,7 @@ title = "Construction output month-on-month growth, Great Britain"
 measure = "Percent MoM; CVM; SA"
 frequency = "M"
 dataset_path = "/businessindustryandtrade/constructionindustry/datasets/outputintheconstructionindustryrevisionstriangle1monthgrowth"
+publication_lag_months = 2
 
 [[triangle]]
 id = "IKBH"

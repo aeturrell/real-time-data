@@ -21,7 +21,13 @@ uv run realtime build            # download anything new and rebuild the archive
 uv run realtime build --offline  # rebuild from cached files only, without downloading
 uv run realtime build --only triangle
 uv run realtime report           # print coverage diagnostics for each series
+uv run realtime validate         # check for look-ahead and compare growth triangles with levels
+uv run realtime benchmark        # compare with the OECD's independent real-time database
 ```
+
+`validate` lists any value dated on or before the end of the period it describes (which would mean a wrongly dated vintage), and compares each growth-rate triangle with growth worked out from the matching level series at every vintage.
+
+`benchmark` checks the archive against the OECD's short-term economic statistics revisions database, which has kept every monthly edition of its UK figures since February 1999 and was assembled independently of this archive. For each OECD edition, the latest 12 periods are compared with our figures from around the same date, and the share agreeing is written to `scratch/oecd_benchmark.csv`.
 
 The first build downloads several thousand files, at a polite rate, so it takes a few hours. Past versions of ONS pages never change, so later builds only fetch what is new.
 
@@ -65,6 +71,73 @@ archive["quarter"] = convert_frequency(archive["reference_period"], "Q")
 ```
 
 `read_archive` turns `reference_period` into `pd.Period` objects. One table holds every frequency, so the column has object dtype; `to_period_dtype` gives a true `PeriodDtype` for a single-frequency subset.
+
+## Recommended series for nowcasting
+
+Several headline indicators are held in more than one form, for example GDP as a level (`ABMI`) and as a growth rate (`IHYQ`). For pseudo-real-time work, such as testing a nowcasting model on the data that was available at each date, the safest choice is the form that stays the same throughout the sample: the same ONS measure, the same units and the same rounding, from one source (or from sources ONS publishes identically).
+
+In practice, this means preferring the published growth rates. Levels change units every few years, because ONS re-expresses chained volume measures in the prices of a new reference year. Old GDP vintages are even in 1954 or 1975 prices. So a level compared across vintages shows large jumps that are not revisions. Growth rates are not affected by this.
+
+| Indicator | Recommended `series_id` | Vintages from | Notes |
+|---|---|---|---|
+| GDP, quarter on quarter | `IHYQ` | 1992 | Checked against the OECD: 99.9% agree |
+| GDP, month on month | `ECYX` | 2018 | Monthly GDP was first published in July 2018 |
+| Nominal GDP, quarter on quarter | `YBHA_QOQ` | 1992 | |
+| GDP deflator, on a year ago | `YBGB_YOY` | 2006 | |
+| Household consumption | `ABJR_QOQ` | 1996 | |
+| Government consumption | `NMRY_QOQ` | 1996 | |
+| Gross fixed capital formation | `NPQT_QOQ` | 1996 | The August 2002 vintage holds an ONS typing error (−5.5% for 2002 Q2) |
+| Business investment | `KG7P` | 1998 | |
+| Exports and imports (volume) | `IKBK_QOQ`, `IKBL_QOQ` | 1996 | |
+| Production, month on month | `IOP_MOM` (`IOM_MOM` for manufacturing) | 1998 | |
+| Services, month on month | `IOS_MOM` | 2000 | |
+| Construction, month on month | `CON_MOM` | 2013 | |
+| Retail sales volume, month on month | `RSI_MOM` | 1998 | Not checked against the OECD, whose UK retail series is a different measure |
+| CPI inflation | `D7G7` | 1997 | Never revised, so earlier values are first publications; checked against the OECD: 100% agree |
+| RPI | `CHAW` | 1997 | Never revised; checked against the OECD: 100% agree |
+| Unemployment rate | `MGSX` | 1999 | Rolling three-month figures, stored against the month the window ends |
+| Employment rate | `LF24` | 2010 | Rolling three-month figures, as above |
+| Claimant count | `BCJD` | 1999 | |
+| Household saving ratio | `NRJS` | 1998 | |
+
+The same list, ready to copy:
+
+```python
+RECOMMENDED_SERIES = [
+    "IHYQ", "ECYX", "YBHA_QOQ", "YBGB_YOY",
+    "ABJR_QOQ", "NMRY_QOQ", "NPQT_QOQ", "KG7P", "IKBK_QOQ", "IKBL_QOQ",
+    "IOP_MOM", "IOM_MOM", "IOS_MOM", "CON_MOM", "RSI_MOM",
+    "D7G7", "CHAW",
+    "MGSX", "LF24", "BCJD",
+    "NRJS",
+]
+```
+
+To rebuild the table's start years from the archive itself, with [DuckDB](https://duckdb.org/):
+
+```bash
+duckdb -c "SELECT series_id, any_value(title) AS title, year(min(vintage_date)) AS vintages_from, count(*) AS rows FROM 'scratch/realtimedata.parquet' WHERE series_id IN ('IHYQ','ECYX','YBHA_QOQ','YBGB_YOY','ABJR_QOQ','NMRY_QOQ','NPQT_QOQ','KG7P','IKBK_QOQ','IKBL_QOQ','IOP_MOM','IOM_MOM','IOS_MOM','CON_MOM','RSI_MOM','D7G7','CHAW','MGSX','LF24','BCJD','NRJS') GROUP BY series_id ORDER BY vintages_from, series_id"
+```
+
+Things to be aware of:
+
+- **Dating precision changes in late 2015.** Before then, most vintages are dated to the last day of their publication month (precision `month` or `upper_bound`); after it, to the exact day (`day`). To keep the information set defined the same way over the whole sample, move every vintage date to the end of its month:
+
+  ```python
+  import pandas as pd
+
+  from realtime import as_of, read_archive
+
+  archive = read_archive()
+  archive["vintage_date"] = archive["vintage_date"] + pd.offsets.MonthEnd(0)
+  known_end_2008 = as_of(archive, "2008-12-31")
+  ```
+
+  Month-end dates are the latest a value could have been published. So a model never sees data before it was released, although it may see some data a few weeks later than it really appeared.
+- **Only from late 2015:** earnings growth (`KAC2`, `KAI9`), vacancies (`AP2Y`), public sector net borrowing (`J5II`), CPIH (`L55O`), core and services CPI (`DKO8`, `D7NN`), and the levels of employment and unemployment. Nothing published earlier is held for these.
+- **GDP vintages from 1992 to 1998.** About 5% of growth rates in the `IHYQ` triangle differ, by up to 0.5 percentage points, from growth worked out from the `ABMI` real-time database. This is not yet explained, so treat this stretch with some caution.
+- **When using levels** (for example `ABMI` back to 1961), compare values only within a single vintage. For instance, work out growth within each vintage and only then compare across vintages.
+- **Never-revised back-fills** (`D7G7` and `CHAW` before late 2015) are dated at the end of the month after the reference month. That is later than the true release, but never earlier.
 
 ## Sources
 

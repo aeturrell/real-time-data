@@ -5,12 +5,14 @@ import sys
 
 from loguru import logger
 
+from realtime.benchmark import benchmark_report
 from realtime.build import SOURCE_TYPES, build_archive
 from realtime.cache import DownloadCache
 from realtime.config import load_config
 from realtime.report import coverage_report
-from realtime.settings import ARCHIVE_PATH, DIAGNOSTICS_PATH, LOG_DIR
+from realtime.settings import ARCHIVE_PATH, BENCHMARK_PATH, DIAGNOSTICS_PATH, LOG_DIR
 from realtime.store import read_archive, write_archive
+from realtime.validate import growth_agreement_report, look_ahead_summary
 
 LOG_ROTATION = "10 MB"
 LOG_RETENTION_FILES = 10
@@ -61,6 +63,34 @@ def run_report(arguments: argparse.Namespace) -> None:
     print(report.to_string(index=False))
 
 
+def run_validate(arguments: argparse.Namespace) -> None:
+    """Prints the consistency checks for the existing archive.
+
+    Args:
+        arguments: Parsed command-line arguments.
+    """
+    archive = read_archive(ARCHIVE_PATH)
+    early = look_ahead_summary(archive)
+    print("Rows dated on or before the end of their own period (should be none):")
+    print(early.to_string(index=False) if not early.empty else "  none")
+    print()
+    print("Growth triangles against growth worked out from levels:")
+    print(growth_agreement_report(archive).to_string(index=False))
+
+
+def run_benchmark(arguments: argparse.Namespace) -> None:
+    """Compares the archive with the OECD revisions database and writes the results.
+
+    Args:
+        arguments: Parsed command-line arguments.
+    """
+    cache = DownloadCache(offline=arguments.offline)
+    report = benchmark_report(read_archive(ARCHIVE_PATH), cache)
+    report.to_csv(BENCHMARK_PATH, index=False)
+    print(report.to_string(index=False))
+    logger.info(f"Benchmark written to {BENCHMARK_PATH}")
+
+
 def parse_arguments(argv: list[str] | None = None) -> argparse.Namespace:
     """Reads the command line.
 
@@ -89,6 +119,17 @@ def parse_arguments(argv: list[str] | None = None) -> argparse.Namespace:
         "report", help="print coverage diagnostics for the archive"
     )
     report.set_defaults(handler=run_report)
+    validate = commands.add_parser(
+        "validate", help="check the archive for look-ahead and cross-source agreement"
+    )
+    validate.set_defaults(handler=run_validate)
+    benchmark = commands.add_parser(
+        "benchmark", help="compare the archive with the OECD revisions database"
+    )
+    benchmark.add_argument(
+        "--offline", action="store_true", help="use only cached files; never download"
+    )
+    benchmark.set_defaults(handler=run_benchmark)
     return parser.parse_args(argv)
 
 

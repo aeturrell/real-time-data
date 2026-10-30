@@ -395,7 +395,7 @@ def _to_archive_rows(
         Rows ready for the archive.
     """
     month_ends = {
-        month: month.end_time.normalize()
+        month: (month + spec.publication_lag_months).end_time.normalize()
         for month in observations["vintage_month"].unique()
     }
     return pd.DataFrame(
