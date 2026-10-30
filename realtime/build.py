@@ -5,6 +5,7 @@ from loguru import logger
 
 from realtime.cache import DownloadCache
 from realtime.config import ArchiveConfig
+from realtime.settings import LATE_FIRST_APPEARANCES_PATH
 from realtime.sources.base import SOURCE_PRIORITY, Source
 from realtime.sources.realtime_db import RealtimeDbSource
 from realtime.sources.series_json import SeriesJsonSource
@@ -14,8 +15,10 @@ from realtime.store import (
     RANK_COLUMN,
     SOURCE_RANK_COLUMN,
     collapse_to_changes,
+    label_release_types,
     prefer_best_sources,
 )
+from realtime.validate import late_first_appearances
 
 SOURCE_TYPES = {
     SeriesJsonSource.name: lambda config, cache: SeriesJsonSource(config.series, cache),
@@ -73,11 +76,32 @@ def build_archive(
     observations = add_rank(
         pd.concat(frames, ignore_index=True), config.primary_datasets()
     )
-    changes = collapse_to_changes(prefer_best_sources(observations))
+    changes = label_release_types(
+        collapse_to_changes(prefer_best_sources(observations))
+    )
     logger.info(
         f"Merged {len(observations):,} rows into {len(changes):,} change-only rows"
     )
+    record_late_first_appearances(observations, changes)
     return changes.drop(columns=[RANK_COLUMN, SOURCE_RANK_COLUMN])
+
+
+def record_late_first_appearances(
+    observations: pd.DataFrame, changes: pd.DataFrame
+) -> None:
+    """Saves, and warns about, periods first shown later than some source has them.
+
+    Args:
+        observations: Every source's rows, before weaker sources are set aside.
+        changes: The merged change-only rows.
+    """
+    late = late_first_appearances(observations, changes)
+    late.to_csv(LATE_FIRST_APPEARANCES_PATH, index=False)
+    if not late.empty:
+        logger.warning(
+            f"{len(late)} periods first appear later than in some source; "
+            f"see {LATE_FIRST_APPEARANCES_PATH}"
+        )
 
 
 def add_rank(

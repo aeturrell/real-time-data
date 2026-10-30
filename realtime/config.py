@@ -4,9 +4,11 @@ import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from realtime.schema import PERIOD_BASES
 from realtime.settings import SERIES_CONFIG_PATH
 
 DEFAULT_SHEET_PATTERN = "triangle"
+DEFAULT_BASIS = "period"
 
 
 @dataclass(frozen=True)
@@ -22,6 +24,8 @@ class SeriesSpec:
         unrevised_from: For series ONS never revises, the first reference period
             (for example "1997-01") from which today's values can stand in for
             first publications.
+        basis: "period", or "3m_ending" for rolling three-month figures, whose
+            monthly values are stored against the month the window ends.
     """
 
     series_id: str
@@ -30,6 +34,7 @@ class SeriesSpec:
     primary_dataset: str
     exclude_datasets: tuple[str, ...] = ()
     unrevised_from: str | None = None
+    basis: str = DEFAULT_BASIS
 
 
 @dataclass(frozen=True)
@@ -164,6 +169,7 @@ def _series_spec(entry: dict) -> SeriesSpec:
             dataset.upper() for dataset in entry.get("exclude_datasets", [])
         ),
         unrevised_from=entry.get("unrevised_from"),
+        basis=_basis(entry),
     )
 
 
@@ -182,7 +188,7 @@ def _triangle_spec(entry: dict) -> TriangleSpec:
         title=entry["title"],
         measure=entry["measure"],
         frequency=entry["frequency"],
-        basis=entry.get("basis", "period"),
+        basis=_basis(entry),
         dataset_path=entry["dataset_path"],
         file_pattern=entry.get("file_pattern"),
         member_pattern=entry.get("member_pattern"),
@@ -226,3 +232,21 @@ def _check_unique(series_ids: list[str], section: str) -> None:
     )
     if duplicates:
         raise ValueError(f"Duplicate IDs in [[{section}]]: {duplicates}")
+
+
+def _basis(entry: dict) -> str:
+    """Reads and checks an entry's reference-period basis.
+
+    Args:
+        entry: The raw TOML table.
+
+    Returns:
+        The basis, "period" if none is given.
+
+    Raises:
+        ValueError: If the basis is not one the archive allows.
+    """
+    basis = entry.get("basis", DEFAULT_BASIS)
+    if basis not in PERIOD_BASES:
+        raise ValueError(f"{entry['id']}: unknown basis {basis!r}")
+    return basis

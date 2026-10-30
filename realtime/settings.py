@@ -10,6 +10,7 @@ SERIES_CONFIG_PATH = PROJECT_ROOT / "series.toml"
 ARCHIVE_PATH = SCRATCH_DIR / "realtimedata.parquet"
 DIAGNOSTICS_PATH = SCRATCH_DIR / "diagnostics.csv"
 BENCHMARK_PATH = SCRATCH_DIR / "oecd_benchmark.csv"
+LATE_FIRST_APPEARANCES_PATH = SCRATCH_DIR / "late_first_appearances.csv"
 
 ONS_BASE_URL = "https://www.ons.gov.uk"
 ONS_SEARCH_API_URL = "https://api.beta.ons.gov.uk/v1/search"

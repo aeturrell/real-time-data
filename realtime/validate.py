@@ -1,9 +1,16 @@
 """Checks that the assembled archive is internally consistent.
 
-Two checks are run:
+The checks are:
 
 - No look-ahead: a value can never have been published on or before the last day
   of the period it describes, so any such row points to a wrongly dated vintage.
+- One basis per series: a monthly series' figures are either single months or
+  rolling three-month windows, never a mix.
+- No late first releases: a period should first appear in the archive no later
+  than in any source collected. If it appears later, a source was wrongly set
+  aside. Periods that every source first shows more than a year after they
+  ended are old history, not releases, and are not checked (this check runs during the build, which still has every source's
+  rows, and is saved to scratch/late_first_appearances.csv).
 - Cross-product agreement: ONS publishes some series both as levels (in page
   histories and real-time databases) and as growth-rate revisions triangles. At
   every triangle vintage, growth worked out from the levels known at that date
@@ -12,7 +19,7 @@ Two checks are run:
 
 import pandas as pd
 
-from realtime.store import revision_triangle
+from realtime.store import HISTORY_AFTER, period_ends, revision_triangle
 
 GROWTH_PAIRS = {
     "IHYQ": "ABMI",
@@ -27,6 +34,9 @@ QUARTERLY = "Q"
 PERCENT = 100
 ROUNDING_TOLERANCE = 0.05 + 1e-9
 CLOSE_TOLERANCE = 0.15
+MONTHLY = "M"
+LATE_MARGIN = pd.Timedelta(days=31)
+SERIES_PERIOD = ["series_id", "reference_period"]
 
 
 def look_ahead_summary(archive: pd.DataFrame) -> pd.DataFrame:
@@ -58,6 +68,65 @@ def look_ahead_summary(archive: pd.DataFrame) -> pd.DataFrame:
             include_groups=False,
         )
         .reset_index()
+    )
+
+
+def mixed_basis_summary(archive: pd.DataFrame) -> pd.DataFrame:
+    """Finds monthly series whose rows use more than one reference-period basis.
+
+    Args:
+        archive: The archive, as returned by read_archive.
+
+    Returns:
+        One row per such series and basis, with the row count and the vintages
+        it spans.
+    """
+    monthly = archive.loc[archive["frequency"] == MONTHLY]
+    bases = monthly.groupby("series_id", observed=True)[
+        "reference_period_basis"
+    ].nunique()
+    mixed = monthly.loc[monthly["series_id"].isin(bases.index[bases > 1])]
+    return (
+        mixed.groupby(["series_id", "reference_period_basis"], observed=True)
+        .agg(
+            rows=("value", "size"),
+            first_vintage=("vintage_date", "min"),
+            last_vintage=("vintage_date", "max"),
+        )
+        .reset_index()
+    )
+
+
+def late_first_appearances(
+    observations: pd.DataFrame, changes: pd.DataFrame
+) -> pd.DataFrame:
+    """Finds first releases that appear in the archive later than in some source.
+
+    Args:
+        observations: Every source's rows, before weaker sources are set aside.
+        changes: The merged change-only rows.
+
+    Returns:
+        One row per late period, with when it first appears in the archive, the
+        earliest source row, which source that was, and the delay in days.
+    """
+    in_archive = changes.groupby(SERIES_PERIOD, observed=True)["vintage_date"].min()
+    earliest = (
+        observations.sort_values("vintage_date")
+        .drop_duplicates(SERIES_PERIOD)
+        .set_index(SERIES_PERIOD)[["vintage_date", "source"]]
+        .rename(columns={"vintage_date": "earliest_in_source"})
+        .join(in_archive.rename("in_archive"), how="inner")
+        .reset_index()
+    )
+    delay = earliest["in_archive"] - earliest["earliest_in_source"]
+    lag = earliest["earliest_in_source"] - period_ends(earliest["reference_period"])
+    is_late_release = (delay > LATE_MARGIN) & (lag <= HISTORY_AFTER)
+    return (
+        earliest.assign(days_late=delay.dt.days)
+        .loc[is_late_release]
+        .sort_values(SERIES_PERIOD)
+        .reset_index(drop=True)
     )
 
 

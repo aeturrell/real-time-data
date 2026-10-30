@@ -14,6 +14,7 @@ CATEGORY_COLUMNS = [
     "reference_period",
     "reference_period_basis",
     "vintage_date_precision",
+    "release_type",
     "source",
     "source_url",
     "content_sha256",
@@ -30,6 +31,7 @@ COLUMNS = [
     "reference_period_basis",
     "vintage_date",
     "vintage_date_precision",
+    "release_type",
     "value",
     "source",
     "source_url",
@@ -40,6 +42,7 @@ COLUMNS = [
 FREQUENCIES = frozenset({"A", "Q", "M"})
 PERIOD_BASES = frozenset({"period", "3m_ending"})
 VINTAGE_PRECISIONS = frozenset({"day", "month", "upper_bound"})
+RELEASE_TYPES = frozenset({"first", "revision", "history"})
 
 
 class SchemaError(ValueError):
@@ -93,6 +96,7 @@ def validate(frame: pd.DataFrame) -> None:
     _check_allowed(frame, "frequency", FREQUENCIES)
     _check_allowed(frame, "reference_period_basis", PERIOD_BASES)
     _check_allowed(frame, "vintage_date_precision", VINTAGE_PRECISIONS)
+    _check_allowed(frame, "release_type", RELEASE_TYPES)
 
 
 def _check_allowed(frame: pd.DataFrame, column: str, allowed: frozenset[str]) -> None:

@@ -17,6 +17,12 @@ from realtime.settings import ARCHIVE_PATH
 VALUE_COMPARISON_DECIMALS = 9
 RANK_COLUMN = "_rank"
 SOURCE_RANK_COLUMN = "_source_rank"
+MAX_DECIMAL_PLACES = 6
+DECIMAL_TOLERANCE = 1e-9
+HISTORY_AFTER = pd.Timedelta(days=366)
+FIRST = "first"
+REVISION = "revision"
+HISTORY = "history"
 SERIES_PERIOD = ["series_id", "reference_period"]
 SORT_COLUMNS = ["series_id", "frequency", "reference_period", "vintage_date"]
 
@@ -46,37 +52,146 @@ def collapse_to_changes(observations: pd.DataFrame) -> pd.DataFrame:
     return ordered.loc[is_change].reset_index(drop=True)
 
 
-def prefer_best_sources(observations: pd.DataFrame) -> pd.DataFrame:
-    """Drops rows from weaker sources once any stronger source starts covering a series.
+def label_release_types(changes: pd.DataFrame) -> pd.DataFrame:
+    """Says whether each change-only row is a first release, a revision or history.
 
-    Each source type only fills the years before every stronger source for the
-    same series begins. For example, once exact-date series histories begin (late
-    2015), triangle rows for the same series from that date onwards are dropped,
-    and real-time database rows are dropped once the triangle begins. This stops
-    differences in rounding between sources showing up as false revisions. Only
-    the source type counts here: every dataset page of the same source type is
-    kept, because each one carries releases the others miss (GDP's first quarterly
-    estimate is published only in the PN2 dataset, for example).
+    A period's first row is normally its first estimate. But where a source
+    only begins long after a period ended (pre-1992 GDP growth first appears in
+    the page history of May 2015, for example), that row is old history seen for
+    the first time, not a release. A first row dated more than a year after its
+    period ended is labelled "history"; later rows are "revision".
 
     Args:
-        observations: Rows with "series_id", "vintage_date" and "_source_rank"
-            columns.
+        changes: Change-only rows with "series_id", "frequency",
+            "reference_period" (as strings) and "vintage_date".
+
+    Returns:
+        The rows with a "release_type" column.
+    """
+    ordered = changes.sort_values(SORT_COLUMNS, kind="stable")
+    is_first = ~ordered.duplicated(subset=SERIES_PERIOD, keep="first")
+    ends = period_ends(ordered["reference_period"])
+    is_late = ordered["vintage_date"] - ends > HISTORY_AFTER
+    release_type = pd.Series(REVISION, index=ordered.index).mask(is_first, FIRST)
+    return ordered.assign(release_type=release_type.mask(is_first & is_late, HISTORY))
+
+
+def period_ends(periods: pd.Series) -> pd.Series:
+    """Gives midnight on the last day of each reference period.
+
+    Args:
+        periods: Reference periods as canonical strings.
+
+    Returns:
+        The period end dates.
+    """
+    unique = periods.astype(str).unique()
+    ends = {text: string_to_period(text).end_time.normalize() for text in unique}
+    return periods.astype(str).map(ends)
+
+
+def prefer_best_sources(observations: pd.DataFrame) -> pd.DataFrame:
+    """Uses each weaker source only in months that no stronger source covers.
+
+    Sources are ranked by "_source_rank" (lower is stronger). A row is dropped
+    when a stronger source has any vintage for the same series in the same
+    calendar month, because both then describe the same release. This lets
+    triangles fill the years before exact-date page histories begin (late
+    2015), and also any month afterwards that the page histories miss. Only the
+    source type counts here: every dataset page of the same source type is
+    kept, because each one carries releases the others miss (GDP's first
+    quarterly estimate is published only in the PN2 dataset, for example).
+
+    Rows that fill a gap after a stronger source has begun are rounded to that
+    source's decimal places, so that differences in rounding between sources
+    do not show up as false revisions.
+
+    Args:
+        observations: Rows with "series_id", "vintage_date", "value" and
+            "_source_rank" columns.
 
     Returns:
         The rows that survive.
+    """
+    month = observations["vintage_date"].dt.to_period("M")
+    strongest_in_month = observations.groupby(
+        [observations["series_id"], month], observed=True
+    )[SOURCE_RANK_COLUMN].transform("min")
+    keep = observations[SOURCE_RANK_COLUMN] == strongest_in_month
+    dropped = int((~keep).sum())
+    if dropped:
+        logger.info(
+            f"Dropped {dropped} rows from weaker sources in months stronger ones cover"
+        )
+    return _round_gap_fills(observations.loc[keep])
+
+
+def _round_gap_fills(observations: pd.DataFrame) -> pd.DataFrame:
+    """Rounds weaker-source rows dated after a stronger source has begun.
+
+    Args:
+        observations: Rows with "series_id", "vintage_date", "value" and
+            "_source_rank" columns.
+
+    Returns:
+        The rows, with gap-filling values rounded to the decimal places of the
+        series' strongest source.
     """
     cutoffs = _stronger_source_starts(observations)
     keys = pd.MultiIndex.from_arrays(
         [observations["series_id"], observations[SOURCE_RANK_COLUMN]]
     )
     cutoff = pd.Series(cutoffs.reindex(keys).to_numpy(), index=observations.index)
-    keep = cutoff.isna() | (observations["vintage_date"] < cutoff)
-    dropped = int((~keep).sum())
-    if dropped:
-        logger.info(
-            f"Dropped {dropped} rows from weaker sources that overlap stronger ones"
+    fills_gap = cutoff.notna() & (observations["vintage_date"] >= cutoff)
+    if not fills_gap.any():
+        return observations
+    places = observations.loc[fills_gap, "series_id"].map(
+        _strongest_source_decimal_places(observations)
+    )
+    filled = observations.copy()
+    filled.loc[fills_gap, "value"] = [
+        round(value, int(digits))
+        for value, digits in zip(
+            observations.loc[fills_gap, "value"], places, strict=True
         )
-    return observations.loc[keep]
+    ]
+    logger.info(f"Filled {len(places):,} rows from weaker sources into gaps")
+    return filled
+
+
+def _strongest_source_decimal_places(observations: pd.DataFrame) -> pd.Series:
+    """Finds how many decimal places each series' strongest source publishes.
+
+    Args:
+        observations: Rows with "series_id", "value" and "_source_rank" columns.
+
+    Returns:
+        The number of decimal places, indexed by series ID.
+    """
+    strongest_rank = observations.groupby("series_id", observed=True)[
+        SOURCE_RANK_COLUMN
+    ].transform("min")
+    strongest = observations.loc[observations[SOURCE_RANK_COLUMN] == strongest_rank]
+    return strongest.groupby("series_id", observed=True)["value"].agg(decimal_places)
+
+
+def decimal_places(values: pd.Series) -> int:
+    """Finds the fewest decimal places that represent every value exactly.
+
+    Args:
+        values: The values.
+
+    Returns:
+        A number of decimal places, at most MAX_DECIMAL_PLACES.
+    """
+    return next(
+        (
+            places
+            for places in range(MAX_DECIMAL_PLACES)
+            if ((values - values.round(places)).abs() < DECIMAL_TOLERANCE).all()
+        ),
+        MAX_DECIMAL_PLACES,
+    )
 
 
 def _stronger_source_starts(observations: pd.DataFrame) -> pd.Series:

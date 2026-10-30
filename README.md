@@ -21,17 +21,22 @@ uv run realtime build            # download anything new and rebuild the archive
 uv run realtime build --offline  # rebuild from cached files only, without downloading
 uv run realtime build --only triangle
 uv run realtime report           # print coverage diagnostics for each series
-uv run realtime validate         # check for look-ahead and compare growth triangles with levels
+uv run realtime validate         # check for look-ahead, late releases and mixed bases, and compare growth triangles with levels
 uv run realtime benchmark        # compare with the OECD's independent real-time database
 ```
 
-`validate` lists any value dated on or before the end of the period it describes (which would mean a wrongly dated vintage), and compares each growth-rate triangle with growth worked out from the matching level series at every vintage.
+`validate` runs four checks:
+
+- **Look-ahead:** any value dated on or before the end of the period it describes, which would mean a wrongly dated vintage.
+- **Mixed bases:** any monthly series that mixes single months with rolling three-month windows.
+- **Late first releases:** any period that first appears in the archive more than a month later than in one of the sources collected, which would mean a source was wrongly set aside. This needs every source's rows, so it runs during the build and is saved to `scratch/late_first_appearances.csv`.
+- **Growth against levels:** each growth-rate triangle is compared with growth worked out from the matching level series at every vintage.
 
 `benchmark` checks the archive against the OECD's short-term economic statistics revisions database, which has kept every monthly edition of its UK figures since February 1999 and was assembled independently of this archive. For each OECD edition, the latest 12 periods are compared with our figures from around the same date, and the share agreeing is written to `scratch/oecd_benchmark.csv`.
 
 The first build downloads several thousand files, at a polite rate, so it takes a few hours. Past versions of ONS pages never change, so later builds only fetch what is new.
 
-Each build also writes `scratch/diagnostics.csv`, which shows for each series how many vintages it has, the dates they span, how many are dated to the exact day, and any unusually long gaps.
+Each build also writes `scratch/diagnostics.csv`, which shows for each series how many vintages it has, the dates they span, and how many are dated to the exact day. It also gives the usual (median) gap between vintages and the longest gap, with the date it ended. A gap more than three times the usual one is flagged as `unusual_gap`, because it usually means releases are missing.
 
 ## Terms
 
@@ -54,6 +59,7 @@ One row per series, reference period and vintage date where the value was first 
 | `reference_period_basis` | `period`, or `3m_ending` for rolling three-month labour market figures, which are stored against the month the window ends |
 | `vintage_date` | When ONS published the value |
 | `vintage_date_precision` | `day` (exact), `month` (only the publication month is known, so the last day of the month is used) or `upper_bound` (the latest date it could have been published) |
+| `release_type` | `first` (the first estimate of a period), `revision` (a later change), or `history` (a period first seen in the archive more than a year after it ended, because no source reaches back to its first estimate; for example, GDP growth for 1955 to 1991 first appears in May 2015) |
 | `value` | The published value |
 | `source`, `source_url`, `retrieved_at`, `content_sha256` | Where and when the value was obtained |
 
@@ -69,6 +75,8 @@ gdp_in_june_2020 = as_of(archive, "2020-06-30").query("series_id == 'ABMI'")
 triangle = revision_triangle(archive, "IHYQ")
 archive["quarter"] = convert_frequency(archive["reference_period"], "Q")
 ```
+
+To study first estimates only, keep rows where `release_type == "first"`; `history` rows are old figures, not releases.
 
 `read_archive` turns `reference_period` into `pd.Period` objects. One table holds every frequency, so the column has object dtype; `to_period_dtype` gives a true `PeriodDtype` for a single-frequency subset.
 
@@ -137,6 +145,7 @@ Things to be aware of:
 - **Only from late 2015:** earnings growth (`KAC2`, `KAI9`), vacancies (`AP2Y`), public sector net borrowing (`J5II`), CPIH (`L55O`), core and services CPI (`DKO8`, `D7NN`), and the levels of employment and unemployment. Nothing published earlier is held for these.
 - **GDP vintages from 1992 to 1998.** About 5% of growth rates in the `IHYQ` triangle differ, by up to 0.5 percentage points, from growth worked out from the `ABMI` real-time database. This is not yet explained, so treat this stretch with some caution.
 - **When using levels** (for example `ABMI` back to 1961), compare values only within a single vintage. For instance, work out growth within each vintage and only then compare across vintages.
+- **Missing releases.** Some releases are in no source collected. The labour market levels (`MGRZ`, `MGSC`, `YBUS`, `LF2S`) have no vintages between October 2023 and February 2024; the rates (`MGSX`, `LF24`) are filled from their triangles. `scratch/diagnostics.csv` flags gaps like this as `unusual_gap`.
 - **Never-revised back-fills** (`D7G7` and `CHAW` before late 2015) are dated at the end of the month after the reference month. That is later than the true release, but never earlier.
 
 ## Sources
@@ -148,7 +157,9 @@ The series collected are listed in `series.toml`.
 - **Real-time databases** (`[[realtime_db]]` entries). ONS spreadsheets holding every published vintage of GDP (back to 1961), nominal GDP and the main expenditure components, with the publication month of each.
 - **Never-revised series** (`[[series]]` entries with `unrevised_from`). For series ONS never revises, such as the Retail Prices Index, today's figures are the first publications. Each is dated at the end of the month after its reference period (the latest it could have been published), with precision `upper_bound`.
 
-When several sources cover a series, each weaker one is used only for the period before every stronger one begins. From strongest to weakest: exact-date page histories, then triangles and never-revised back-fills, then real-time databases.
+When several sources cover a series, a weaker source is used only in months where no stronger source has a vintage for that series. From strongest to weakest: exact-date page histories, then triangles and never-revised back-fills, then real-time databases. In practice, the weaker sources supply the years before the stronger ones begin, and also any later month the stronger ones miss (the page histories have no versions between May and September 2015, for example). Values that fill such a gap are rounded to the decimal places of the series' strongest source, so that differences in rounding do not show up as false revisions.
+
+Rolling three-month labour market figures are marked with `basis = "3m_ending"` in `series.toml`, rather than being recognised from page labels. ONS labels them with their three-month window ("2015 AUG-OCT"), except on the first saved versions of October 2015, which give only the middle month.
 
 ## Further development
 

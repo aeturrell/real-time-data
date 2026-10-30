@@ -14,6 +14,7 @@ SPEC = SeriesSpec(
     short_name="employment_rate",
     measure="Percent",
     primary_dataset="LMS",
+    basis="3m_ending",
 )
 CACHED = CachedFile(
     url="https://www.ons.gov.uk/x/timeseries/lf24/lms/data",
@@ -47,6 +48,29 @@ def test_observations_from_document() -> None:
     assert (rows["vintage_date"] == VINTAGE.vintage_date).all()
 
 
+def test_three_month_basis_comes_from_config_not_labels() -> None:
+    single_month_labels = DOCUMENT | {
+        "months": [{"date": "2015 JUL", "label": "2015 JUL", "value": "5.4"}]
+    }
+    rows = observations_from_document(single_month_labels, CACHED, VINTAGE, SPEC)
+    monthly = rows.loc[rows["frequency"] == "M"]
+    assert monthly["reference_period"].tolist() == ["2015-08"]
+    assert monthly["reference_period_basis"].tolist() == ["3m_ending"]
+
+
+def test_monthly_figures_stay_put_for_series_with_period_basis() -> None:
+    spec = SeriesSpec(
+        series_id="K222",
+        short_name="production",
+        measure="Index",
+        primary_dataset="DIOP",
+    )
+    rows = observations_from_document(DOCUMENT, CACHED, VINTAGE, spec)
+    monthly = rows.loc[rows["frequency"] == "M"]
+    assert monthly["reference_period"].tolist() == ["2026-07"]
+    assert monthly["reference_period_basis"].tolist() == ["period"]
+
+
 def test_dataset_of_page() -> None:
     assert (
         dataset_of_page("/economy/grossdomesticproductgdp/timeseries/abmi/qna") == "QNA"
@@ -54,7 +78,8 @@ def test_dataset_of_page() -> None:
 
 
 def test_latest_period_end_uses_three_month_end_and_ignores_blanks() -> None:
-    assert latest_period_end(DOCUMENT) == pd.Timestamp("2026-08-31")
+    assert latest_period_end(DOCUMENT, "3m_ending") == pd.Timestamp("2026-08-31")
+    assert latest_period_end(DOCUMENT) == pd.Timestamp("2026-07-31")
     assert latest_period_end({"months": []}) is None
     mid_year = {
         "years": [{"date": "2016", "label": "2016", "value": "1"}],

@@ -2,8 +2,7 @@
 
 import pandas as pd
 
-GAP_TOLERANCE = 1.5
-TYPICAL_GAP_DAYS = {"M": 31, "Q": 92, "A": 366}
+GAP_TOLERANCE = 3
 
 
 def coverage_report(archive: pd.DataFrame) -> pd.DataFrame:
@@ -14,8 +13,9 @@ def coverage_report(archive: pd.DataFrame) -> pd.DataFrame:
 
     Returns:
         One row per series with vintage counts, date ranges, the share of
-        vintages dated to the day, the longest gap between vintages, whether
-        that gap is unusually long for the series' frequency, and the sources used.
+        vintages dated to the day, the usual (median) and longest gaps between
+        vintages, when the longest gap ended, whether it is more than three
+        times the usual gap, and the sources used.
     """
     rows = [
         _series_summary(series_id, group)
@@ -36,8 +36,12 @@ def _series_summary(series_id: str, group: pd.DataFrame) -> dict[str, object]:
     """
     vintages = group.drop_duplicates("vintage_date").sort_values("vintage_date")
     gaps = vintages["vintage_date"].diff().dt.days
-    finest_frequency = _finest_frequency(group["frequency"].astype(str))
-    longest_gap = int(gaps.max()) if gaps.notna().any() else 0
+    has_gaps = gaps.notna().any()
+    usual_gap = int(gaps.median()) if has_gaps else 0
+    longest_gap = int(gaps.max()) if has_gaps else 0
+    longest_gap_ends = (
+        vintages["vintage_date"].loc[gaps.idxmax()].date() if has_gaps else None
+    )
     return {
         "series_id": series_id,
         "short_name": group["short_name"].iloc[0],
@@ -48,20 +52,9 @@ def _series_summary(series_id: str, group: pd.DataFrame) -> dict[str, object]:
         "share_day_precision": round(
             (vintages["vintage_date_precision"] == "day").mean(), 3
         ),
+        "usual_gap_days": usual_gap,
         "longest_gap_days": longest_gap,
-        "unusual_gap": longest_gap > GAP_TOLERANCE * TYPICAL_GAP_DAYS[finest_frequency],
+        "longest_gap_ends": longest_gap_ends,
+        "unusual_gap": longest_gap > GAP_TOLERANCE * usual_gap,
         "sources": ", ".join(sorted(group["source"].astype(str).unique())),
     }
-
-
-def _finest_frequency(frequencies: pd.Series) -> str:
-    """Gives the most frequent (finest) frequency present.
-
-    Args:
-        frequencies: Frequency codes.
-
-    Returns:
-        "M", "Q" or "A".
-    """
-    present = set(frequencies.unique())
-    return next(frequency for frequency in ("M", "Q", "A") if frequency in present)

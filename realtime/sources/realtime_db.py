@@ -155,7 +155,9 @@ def read_database(sheet: pd.DataFrame) -> pd.DataFrame:
 
     Returns:
         Columns "vintage_month", "reference_period" and "value". When two
-        columns give the same publication month, the later column wins.
+        columns give the same publication month, the later column wins. Values
+        for quarters that had not ended by the publication month are dropped:
+        they are placeholders (some files fill future quarters with zeros).
 
     Raises:
         ValueError: If no row of publication labels is found.
@@ -179,9 +181,29 @@ def read_database(sheet: pd.DataFrame) -> pd.DataFrame:
     ]
     long = pd.DataFrame(rows, columns=["vintage_month", "reference_period", "value"])
     long["value"] = pd.to_numeric(long["value"], errors="coerce")
-    return long.dropna(subset=["value"]).drop_duplicates(
+    long = long.dropna(subset=["value"]).drop_duplicates(
         subset=["vintage_month", "reference_period"], keep="last"
     )
+    return _drop_unfinished_quarters(long)
+
+
+def _drop_unfinished_quarters(long: pd.DataFrame) -> pd.DataFrame:
+    """Drops values for quarters that had not ended by their publication month.
+
+    Args:
+        long: Columns "vintage_month", "reference_period" and "value".
+
+    Returns:
+        The rows whose quarter ended before the publication month.
+    """
+    last_months = long["reference_period"].map(lambda period: period.asfreq("M", "end"))
+    finished = last_months < long["vintage_month"]
+    if not finished.all():
+        logger.warning(
+            f"Dropped {int((~finished).sum())} placeholder values for quarters "
+            "not yet ended when published"
+        )
+    return long.loc[finished]
 
 
 def _find_header(sheet: pd.DataFrame) -> tuple[int, dict[int, pd.Period]]:

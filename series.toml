@@ -159,42 +159,49 @@ id = "LF24"
 short_name = "employment_rate"
 measure = "Percent; aged 16-64; SA"
 primary_dataset = "LMS"
+basis = "3m_ending"
 
 [[series]]
 id = "MGRZ"
 short_name = "employment"
 measure = "Thousands; aged 16+; SA"
 primary_dataset = "LMS"
+basis = "3m_ending"
 
 [[series]]
 id = "MGSC"
 short_name = "unemployment_level"
 measure = "Thousands; aged 16+; SA"
 primary_dataset = "LMS"
+basis = "3m_ending"
 
 [[series]]
 id = "MGSX"
 short_name = "unemployment_rate"
 measure = "Percent; aged 16+; SA"
 primary_dataset = "LMS"
+basis = "3m_ending"
 
 [[series]]
 id = "LF2S"
 short_name = "inactivity_rate"
 measure = "Percent; aged 16-64; SA"
 primary_dataset = "LMS"
+basis = "3m_ending"
 
 [[series]]
 id = "YBUS"
 short_name = "hours_worked"
 measure = "Millions of hours per week; SA"
 primary_dataset = "LMS"
+basis = "3m_ending"
 
 [[series]]
 id = "AP2Y"
 short_name = "vacancies"
 measure = "Thousands"
 primary_dataset = "LMS"
+basis = "3m_ending"
 
 [[series]]
 id = "BCJD"

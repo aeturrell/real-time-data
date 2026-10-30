@@ -3,6 +3,7 @@
 import argparse
 import sys
 
+import pandas as pd
 from loguru import logger
 
 from realtime.benchmark import benchmark_report
@@ -10,9 +11,19 @@ from realtime.build import SOURCE_TYPES, build_archive
 from realtime.cache import DownloadCache
 from realtime.config import load_config
 from realtime.report import coverage_report
-from realtime.settings import ARCHIVE_PATH, BENCHMARK_PATH, DIAGNOSTICS_PATH, LOG_DIR
+from realtime.settings import (
+    ARCHIVE_PATH,
+    BENCHMARK_PATH,
+    DIAGNOSTICS_PATH,
+    LATE_FIRST_APPEARANCES_PATH,
+    LOG_DIR,
+)
 from realtime.store import read_archive, write_archive
-from realtime.validate import growth_agreement_report, look_ahead_summary
+from realtime.validate import (
+    growth_agreement_report,
+    look_ahead_summary,
+    mixed_basis_summary,
+)
 
 LOG_ROTATION = "10 MB"
 LOG_RETENTION_FILES = 10
@@ -74,8 +85,30 @@ def run_validate(arguments: argparse.Namespace) -> None:
     print("Rows dated on or before the end of their own period (should be none):")
     print(early.to_string(index=False) if not early.empty else "  none")
     print()
+    mixed = mixed_basis_summary(archive)
+    print(
+        "Monthly series mixing single months and three-month windows (should be none):"
+    )
+    print(mixed.to_string(index=False) if not mixed.empty else "  none")
+    print()
+    print("Periods first shown later than some source has them (should be none):")
+    print(_late_first_appearances_text())
+    print()
     print("Growth triangles against growth worked out from levels:")
     print(growth_agreement_report(archive).to_string(index=False))
+
+
+def _late_first_appearances_text() -> str:
+    """Reads the late-first-appearances check saved by the last build.
+
+    Returns:
+        The table as text, "  none" if it is empty, or a note if no build has
+        saved it yet.
+    """
+    if not LATE_FIRST_APPEARANCES_PATH.exists():
+        return "  not available: run a build first"
+    late = pd.read_csv(LATE_FIRST_APPEARANCES_PATH)
+    return late.to_string(index=False) if not late.empty else "  none"
 
 
 def run_benchmark(arguments: argparse.Namespace) -> None:

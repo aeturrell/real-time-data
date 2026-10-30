@@ -55,6 +55,18 @@ def test_read_database_takes_columns_as_vintages_and_rows_as_quarters() -> None:
     assert set(long["reference_period"]) == {pd.Period("1998Q2", "Q-DEC")}
 
 
+def test_read_database_drops_placeholders_for_quarters_not_yet_ended() -> None:
+    sheet = pd.DataFrame(
+        [
+            ["Publication date and time period", "1998 Q3 M2 ", "1998 Q3 QNA"],
+            ["Q3 1998", 100.0, 101.0],
+            ["Q4 1998", 0.0, 0.0],
+        ]
+    )
+    long = read_database(sheet)
+    assert set(long["reference_period"]) == {pd.Period("1998Q3", "Q-DEC")}
+
+
 def test_repair_out_of_order_fixes_typing_mistakes_from_neighbours() -> None:
     months = {
         1: pd.Period("1969-02", "M"),

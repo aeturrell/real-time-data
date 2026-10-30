@@ -7,6 +7,7 @@ from realtime.store import (
     as_of,
     collapse_to_changes,
     convert_frequency,
+    label_release_types,
     prefer_best_sources,
     read_archive,
     revision_triangle,
@@ -102,6 +103,42 @@ def test_prefer_best_sources_lets_each_source_fill_only_before_stronger_ones() -
     assert prefer_best_sources(rows)["value"].tolist() == [1.0, 1.2, 1.4]
 
 
+def test_prefer_best_sources_fills_months_the_stronger_source_misses() -> None:
+    rows = pd.DataFrame(
+        [
+            observation("2015-05", "2015-06-30", 4.1236, rank=4),
+            observation("2015-05", "2015-07-15", 4.2, rank=0),
+            observation("2015-05", "2015-08-31", 4.2236, rank=4),
+            observation("2015-05", "2015-09-30", 4.2799, rank=4),
+            observation("2015-05", "2015-09-16", 4.3, rank=0),
+        ]
+    )
+    kept = prefer_best_sources(rows).sort_values("vintage_date")
+    assert kept["vintage_date"].dt.strftime("%Y-%m-%d").tolist() == [
+        "2015-06-30",
+        "2015-07-15",
+        "2015-08-31",
+        "2015-09-16",
+    ]
+    assert kept["value"].tolist() == [4.1236, 4.2, 4.2, 4.3]
+
+
+def test_label_release_types_marks_late_first_rows_as_history() -> None:
+    rows = pd.DataFrame(
+        [
+            observation("2024Q1", "2024-05-10", 1.0),
+            observation("2024Q1", "2024-06-28", 1.1),
+            observation("1960Q1", "2015-05-28", 0.5),
+        ]
+    )
+    labelled = label_release_types(rows).set_index(["reference_period", "value"])
+    assert labelled["release_type"].to_dict() == {
+        ("1960Q1", 0.5): "history",
+        ("2024Q1", 1.0): "first",
+        ("2024Q1", 1.1): "revision",
+    }
+
+
 def test_prefer_best_sources_keeps_other_datasets_of_the_best_source() -> None:
     rows = pd.DataFrame(
         [
@@ -124,7 +161,7 @@ def archive(tmp_path: Path) -> pd.DataFrame:
         ]
     ).drop(columns=["_rank", "_source_rank"])
     path = tmp_path / "archive.parquet"
-    write_archive(rows, path)
+    write_archive(label_release_types(rows), path)
     return read_archive(path)
 
 

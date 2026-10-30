@@ -12,7 +12,7 @@ import pandas as pd
 from loguru import logger
 
 from realtime.cache import CachedFile, DownloadCache
-from realtime.config import SeriesSpec
+from realtime.config import DEFAULT_BASIS, SeriesSpec
 from realtime.http import DownloadError
 from realtime.periods import is_three_month_range, parse_period_label, period_to_string
 from realtime.release_dates import PageVersion, Vintage, assign_vintages, london_date
@@ -24,6 +24,8 @@ SOURCE_NAME = "series_json"
 SEARCH_RESULT_LIMIT = 50
 OBSERVATION_GROUPS = {"years": "A", "quarters": "Q", "months": "M"}
 ONE_MONTH = 1
+MONTHLY = "M"
+THREE_MONTH_BASIS = "3m_ending"
 
 
 class SeriesJsonSource:
@@ -89,13 +91,16 @@ class SeriesJsonSource:
                 label=entry["label"],
                 release_date=_release_date(document),
                 replaced_at=london_date(entry.get("updateDate")),
-                latest_period_end=latest_period_end(document),
+                latest_period_end=latest_period_end(document, spec.basis),
             )
             for entry, (document, _) in zip(entries, past, strict=True)
         ]
         versions.append(
             PageVersion(
-                "current", _release_date(current), None, latest_period_end(current)
+                "current",
+                _release_date(current),
+                None,
+                latest_period_end(current, spec.basis),
             )
         )
         vintages = assign_vintages(versions)
@@ -171,8 +176,9 @@ def observations_from_document(
     )
     raw["value"] = pd.to_numeric(raw["value"], errors="coerce")
     raw = raw.dropna(subset=["value"])
+    _check_labels_match_basis(raw, spec, document.get("uri", ""))
     periods = [
-        _reference_period(row.date, row.label, row.frequency)
+        _reference_period(row.date, row.frequency, spec.basis)
         for row in raw.itertuples()
     ]
     raw["reference_period"] = [
@@ -194,7 +200,9 @@ def observations_from_document(
     )
 
 
-def latest_period_end(document: dict) -> pd.Timestamp | None:
+def latest_period_end(
+    document: dict, basis: str = DEFAULT_BASIS
+) -> pd.Timestamp | None:
     """Gives the last day of the latest period a version of a page holds.
 
     Only the finest frequency on the page is used, because coarser figures can
@@ -203,6 +211,7 @@ def latest_period_end(document: dict) -> pd.Timestamp | None:
 
     Args:
         document: The page's JSON.
+        basis: The series' configured basis.
 
     Returns:
         Midnight on the last day of the latest period with a value, or None if
@@ -210,7 +219,7 @@ def latest_period_end(document: dict) -> pd.Timestamp | None:
     """
     for group, frequency in reversed(OBSERVATION_GROUPS.items()):
         periods = [
-            _reference_period(item.get("date"), item.get("label"), frequency)[0]
+            _reference_period(item.get("date"), frequency, basis)[0]
             for item in document.get(group) or []
             if item.get("value") not in (None, "")
         ]
@@ -233,26 +242,56 @@ def dataset_of_page(page_uri: str) -> str:
 
 
 def _reference_period(
-    date: str, label: str | None, frequency: str
+    date: str, frequency: str, basis: str
 ) -> tuple[pd.Period | None, str]:
     """Reads one observation's reference period and its basis.
 
     Labour market pages give rolling three-month figures dated by their middle
-    month (date "2026 JUL", label "2026 JUN-AUG"). These are stored against the
-    month the window ends, with basis "3m_ending".
+    month (date "2026 JUL" for June to August). For series configured with basis
+    "3m_ending", monthly figures are moved to the month the window ends.
 
     Args:
         date: The observation's "date" field.
-        label: The observation's "label" field.
         frequency: "A", "Q" or "M".
+        basis: The series' configured basis.
 
     Returns:
         The period (or None if unreadable) and its basis.
     """
     period = parse_period_label(date, frequency)
-    if period is not None and frequency == "M" and is_three_month_range(label):
-        return period + ONE_MONTH, "3m_ending"
-    return period, "period"
+    if period is not None and frequency == MONTHLY and basis == THREE_MONTH_BASIS:
+        return period + ONE_MONTH, THREE_MONTH_BASIS
+    return period, DEFAULT_BASIS
+
+
+def _check_labels_match_basis(
+    raw: pd.DataFrame, spec: SeriesSpec, page_uri: str
+) -> None:
+    """Warns when a page's monthly labels disagree with the series' configured basis.
+
+    Pages normally label rolling three-month figures with their window ("2026
+    JUN-AUG"); the first saved versions of October 2015 give only the middle
+    month, so a page without range labels is noted but still read as configured.
+
+    Args:
+        raw: The page's observations, with "frequency" and "label" columns.
+        spec: The series.
+        page_uri: The page path, for the log message.
+    """
+    monthly_labels = raw.loc[raw["frequency"] == MONTHLY, "label"]
+    if monthly_labels.empty:
+        return
+    has_ranges = monthly_labels.map(is_three_month_range).any()
+    if has_ranges and spec.basis != THREE_MONTH_BASIS:
+        logger.warning(
+            f"{page_uri}: labels give three-month windows but {spec.series_id} "
+            f"is configured with basis {spec.basis!r}"
+        )
+    if spec.basis == THREE_MONTH_BASIS and not has_ranges:
+        logger.info(
+            f"{page_uri}: labels give single months; read as three-month windows "
+            "by their middle month, as configured"
+        )
 
 
 def _release_date(document: dict) -> pd.Timestamp | None:
