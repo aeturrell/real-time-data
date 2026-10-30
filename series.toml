@@ -1,0 +1,612 @@
+# Which series the archive collects, and from where.
+#
+# [[series]] entries are collected from every past version of every ONS
+# time-series page for that CDID (late 2015 onwards, exact release dates).
+# [[triangle]] entries are collected from ONS revisions-triangle spreadsheets
+# (often back to the 1990s, publication month only).
+
+# ---------------------------------------------------------------- Output
+
+[[series]]
+id = "ABMI"
+short_name = "gdp"
+measure = "£m; CVM; SA"
+primary_dataset = "QNA"
+
+[[series]]
+id = "IHYQ"
+short_name = "gdp_growth_qoq"
+measure = "Percent QoQ; CVM; SA"
+primary_dataset = "QNA"
+
+[[series]]
+id = "YBHA"
+short_name = "gdp_nominal"
+measure = "£m; CP; SA"
+primary_dataset = "QNA"
+exclude_datasets = ["EDP2", "EDP3", "EDP4"]
+
+[[series]]
+id = "YBGB"
+short_name = "gdp_deflator"
+measure = "Index; SA"
+primary_dataset = "QNA"
+
+[[series]]
+id = "ECY2"
+short_name = "gva_monthly"
+measure = "Index; CVM; SA"
+primary_dataset = "MGDP"
+
+[[series]]
+id = "ECYX"
+short_name = "gva_monthly_growth_mom"
+measure = "Percent MoM; CVM; SA"
+primary_dataset = "MGDP"
+
+[[series]]
+id = "S2KU"
+short_name = "services"
+measure = "Index; CVM; SA"
+primary_dataset = "IOS1"
+
+[[series]]
+id = "K222"
+short_name = "production"
+measure = "Index; CVM; SA"
+primary_dataset = "DIOP"
+
+[[series]]
+id = "K22A"
+short_name = "manufacturing"
+measure = "Index; CVM; SA"
+primary_dataset = "DIOP"
+
+[[series]]
+id = "J5EK"
+short_name = "retail_sales_volume"
+measure = "Index; volume; SA"
+primary_dataset = "DRSI"
+
+# ----------------------------------------------------------- Expenditure
+
+[[series]]
+id = "NMRY"
+short_name = "government_consumption"
+measure = "£m; CVM; SA"
+primary_dataset = "QNA"
+
+[[series]]
+id = "NPEL"
+short_name = "business_investment"
+measure = "£m; CVM; SA"
+primary_dataset = "CXNV"
+
+[[series]]
+id = "KG7P"
+short_name = "business_investment_growth_qoq"
+measure = "Percent QoQ; CVM; SA"
+primary_dataset = "QNA"
+
+[[series]]
+id = "CAFU"
+short_name = "inventories_change"
+measure = "£m; CVM; SA"
+primary_dataset = "QNA"
+
+[[series]]
+id = "ABJQ"
+short_name = "household_consumption_nominal"
+measure = "£m; CP; SA"
+primary_dataset = "UKEA"
+
+# --------------------------------------------------------------- External
+
+[[series]]
+id = "IKBK"
+short_name = "exports_real"
+measure = "£m; CVM; SA"
+primary_dataset = "MRET"
+
+[[series]]
+id = "IKBL"
+short_name = "imports_real"
+measure = "£m; CVM; SA"
+primary_dataset = "MRET"
+
+[[series]]
+id = "IKBH"
+short_name = "exports"
+measure = "£m; CP; SA"
+primary_dataset = "MRET"
+
+[[series]]
+id = "IKBI"
+short_name = "imports"
+measure = "£m; CP; SA"
+primary_dataset = "MRET"
+
+[[series]]
+id = "IKBJ"
+short_name = "trade_balance"
+measure = "£m; CP; SA"
+primary_dataset = "MRET"
+
+[[series]]
+id = "HBOP"
+short_name = "current_account"
+measure = "£m; CP; SA"
+primary_dataset = "PNBP"
+
+# ------------------------------------------------------------- Households
+
+[[series]]
+id = "NRJR"
+short_name = "real_household_disposable_income"
+measure = "£m; CVM; SA"
+primary_dataset = "UKEA"
+
+[[series]]
+id = "NRJS"
+short_name = "household_saving_ratio"
+measure = "Percent; CP; SA"
+primary_dataset = "UKEA"
+
+# ---------------------------------------------------------- Labour market
+
+[[series]]
+id = "LF24"
+short_name = "employment_rate"
+measure = "Percent; aged 16-64; SA"
+primary_dataset = "LMS"
+
+[[series]]
+id = "MGRZ"
+short_name = "employment"
+measure = "Thousands; aged 16+; SA"
+primary_dataset = "LMS"
+
+[[series]]
+id = "MGSC"
+short_name = "unemployment_level"
+measure = "Thousands; aged 16+; SA"
+primary_dataset = "LMS"
+
+[[series]]
+id = "MGSX"
+short_name = "unemployment_rate"
+measure = "Percent; aged 16+; SA"
+primary_dataset = "LMS"
+
+[[series]]
+id = "LF2S"
+short_name = "inactivity_rate"
+measure = "Percent; aged 16-64; SA"
+primary_dataset = "LMS"
+
+[[series]]
+id = "YBUS"
+short_name = "hours_worked"
+measure = "Millions of hours per week; SA"
+primary_dataset = "LMS"
+
+[[series]]
+id = "AP2Y"
+short_name = "vacancies"
+measure = "Thousands"
+primary_dataset = "LMS"
+
+[[series]]
+id = "BCJD"
+short_name = "claimant_count"
+measure = "Thousands; SA"
+primary_dataset = "UNEM"
+
+[[series]]
+id = "DYDC"
+short_name = "workforce_jobs"
+measure = "Thousands; SA"
+primary_dataset = "LMS"
+
+[[series]]
+id = "KAB9"
+short_name = "average_weekly_earnings"
+measure = "£ per week; total pay; SA"
+primary_dataset = "LMS"
+
+[[series]]
+id = "KAC2"
+short_name = "earnings_growth"
+measure = "Percent YoY; single month; total pay; SA"
+primary_dataset = "LMS"
+
+[[series]]
+id = "KAI9"
+short_name = "regular_pay_growth"
+measure = "Percent YoY; 3-month average; regular pay; SA"
+primary_dataset = "LMS"
+
+[[series]]
+id = "KAJ4"
+short_name = "private_regular_pay_growth"
+measure = "Percent YoY; 3-month average; private sector regular pay; SA"
+primary_dataset = "LMS"
+
+[[series]]
+id = "LZVD"
+short_name = "productivity_growth"
+measure = "Percent YoY; output per hour; SA"
+primary_dataset = "PRDY"
+
+# ----------------------------------------------------------------- Prices
+
+[[series]]
+id = "D7BT"
+short_name = "cpi"
+measure = "Index; 2015=100"
+primary_dataset = "MM23"
+
+[[series]]
+id = "D7G7"
+short_name = "cpi_inflation"
+measure = "Percent YoY"
+primary_dataset = "MM23"
+unrevised_from = "1997-06"
+
+[[series]]
+id = "L55O"
+short_name = "cpih_inflation"
+measure = "Percent YoY"
+primary_dataset = "MM23"
+
+[[series]]
+id = "DKO8"
+short_name = "core_cpi_inflation"
+measure = "Percent YoY"
+primary_dataset = "MM23"
+
+[[series]]
+id = "D7NN"
+short_name = "services_cpi_inflation"
+measure = "Percent YoY"
+primary_dataset = "MM23"
+
+[[series]]
+id = "CHAW"
+short_name = "rpi"
+measure = "Index; Jan 1987=100"
+primary_dataset = "MM23"
+unrevised_from = "1997-01"
+
+[[series]]
+id = "GHIP"
+short_name = "ppi_input"
+measure = "Index; 2015=100"
+primary_dataset = "MM22"
+
+[[series]]
+id = "GB7S"
+short_name = "ppi_output"
+measure = "Index; 2015=100"
+primary_dataset = "MM22"
+
+# -------------------------------------------------------- Public finances
+
+[[series]]
+id = "J5II"
+short_name = "public_sector_net_borrowing"
+measure = "£m; CP; NSA"
+primary_dataset = "PUSF"
+
+# ============================================================== Triangles
+
+[[triangle]]
+id = "IHYQ"
+short_name = "gdp_growth_qoq"
+title = "GDP quarter-on-quarter growth, chained volume measures, seasonally adjusted"
+measure = "Percent QoQ; CVM; SA"
+frequency = "Q"
+dataset_path = "/economy/grossdomesticproductgdp/datasets/revisionstrianglesforukgdpabmi"
+member_pattern = "quarterly gdp"
+
+[[triangle]]
+id = "ABMI_YOY"
+short_name = "gdp_growth_yoy_annual"
+title = "Annual GDP year-on-year growth, chained volume measures"
+measure = "Percent YoY; CVM"
+frequency = "A"
+dataset_path = "/economy/grossdomesticproductgdp/datasets/revisionstrianglesforukgdpabmi"
+member_pattern = "annual gdp"
+
+[[triangle]]
+id = "CAFU"
+short_name = "inventories_change"
+title = "Change in inventories, chained volume measures, seasonally adjusted"
+measure = "£m; CVM; SA"
+frequency = "Q"
+dataset_path = "/economy/grossdomesticproductgdp/datasets/revisionstrianglesforcomponentsfortheexpenditureapproachtothemeasureofukgdp"
+member_pattern = "^CAFU"
+
+[[triangle]]
+id = "NMRY_QOQ"
+short_name = "government_consumption_growth_qoq"
+title = "General government final consumption expenditure quarter-on-quarter growth, CVM SA"
+measure = "Percent QoQ; CVM; SA"
+frequency = "Q"
+dataset_path = "/economy/grossdomesticproductgdp/datasets/revisionstrianglesforcomponentsfortheexpenditureapproachtothemeasureofukgdp"
+member_pattern = "^NMRY"
+
+[[triangle]]
+id = "IKBK_QOQ"
+short_name = "exports_real_growth_qoq"
+title = "Total exports quarter-on-quarter growth, CVM SA"
+measure = "Percent QoQ; CVM; SA"
+frequency = "Q"
+dataset_path = "/economy/grossdomesticproductgdp/datasets/revisionstrianglesforcomponentsfortheexpenditureapproachtothemeasureofukgdp"
+member_pattern = "^IKBK"
+
+[[triangle]]
+id = "IKBL_QOQ"
+short_name = "imports_real_growth_qoq"
+title = "Total imports quarter-on-quarter growth, CVM SA"
+measure = "Percent QoQ; CVM; SA"
+frequency = "Q"
+dataset_path = "/economy/grossdomesticproductgdp/datasets/revisionstrianglesforcomponentsfortheexpenditureapproachtothemeasureofukgdp"
+member_pattern = "^IKBL"
+
+[[triangle]]
+id = "BQKQ_QOQ"
+short_name = "goods_exports_real_growth_qoq"
+title = "Exports of goods quarter-on-quarter growth, CVM SA"
+measure = "Percent QoQ; CVM; SA"
+frequency = "Q"
+dataset_path = "/economy/grossdomesticproductgdp/datasets/revisionstrianglesforcomponentsfortheexpenditureapproachtothemeasureofukgdp"
+member_pattern = "^BQKQ"
+
+[[triangle]]
+id = "BQKO_QOQ"
+short_name = "goods_imports_real_growth_qoq"
+title = "Imports of goods quarter-on-quarter growth, CVM SA"
+measure = "Percent QoQ; CVM; SA"
+frequency = "Q"
+dataset_path = "/economy/grossdomesticproductgdp/datasets/revisionstrianglesforcomponentsfortheexpenditureapproachtothemeasureofukgdp"
+member_pattern = "^BQKO"
+
+[[triangle]]
+id = "IKBE_QOQ"
+short_name = "services_exports_real_growth_qoq"
+title = "Exports of services quarter-on-quarter growth, CVM SA"
+measure = "Percent QoQ; CVM; SA"
+frequency = "Q"
+dataset_path = "/economy/grossdomesticproductgdp/datasets/revisionstrianglesforcomponentsfortheexpenditureapproachtothemeasureofukgdp"
+member_pattern = "^IKBE"
+
+[[triangle]]
+id = "IKBF_QOQ"
+short_name = "services_imports_real_growth_qoq"
+title = "Imports of services quarter-on-quarter growth, CVM SA"
+measure = "Percent QoQ; CVM; SA"
+frequency = "Q"
+dataset_path = "/economy/grossdomesticproductgdp/datasets/revisionstrianglesforcomponentsfortheexpenditureapproachtothemeasureofukgdp"
+member_pattern = "^IKBF"
+
+[[triangle]]
+id = "ABJR_QOQ"
+short_name = "household_consumption_growth_qoq"
+title = "Household final consumption expenditure quarter-on-quarter growth, CVM SA"
+measure = "Percent QoQ; CVM; SA"
+frequency = "Q"
+dataset_path = "/economy/grossdomesticproductgdp/datasets/revisionstrianglesforcomponentsfortheexpenditureapproachtothemeasureofukgdp"
+member_pattern = "^ABJR"
+
+[[triangle]]
+id = "NPQT_QOQ"
+short_name = "gfcf_growth_qoq"
+title = "Gross fixed capital formation quarter-on-quarter growth, CVM SA"
+measure = "Percent QoQ; CVM; SA"
+frequency = "Q"
+dataset_path = "/economy/grossdomesticproductgdp/datasets/revisionstrianglesforcomponentsfortheexpenditureapproachtothemeasureofukgdp"
+member_pattern = "^NPQT"
+
+[[triangle]]
+id = "KG7P"
+short_name = "business_investment_growth_qoq"
+title = "Business investment quarter-on-quarter growth, CVM SA"
+measure = "Percent QoQ; CVM; SA"
+frequency = "Q"
+dataset_path = "/economy/grossdomesticproductgdp/datasets/revisionstogrossfixedcapitalformationandbusinessinvestment"
+sheet_pattern = "^BI(_triangle)?$"
+
+[[triangle]]
+id = "IOS_MOM"
+short_name = "services_growth_mom"
+title = "Index of Services month-on-month growth"
+measure = "Percent MoM; CVM; SA"
+frequency = "M"
+dataset_path = "/economy/economicoutputandproductivity/output/datasets/indexofservicesrevisionstriangles"
+member_pattern = "\\(M on M\\)"
+
+[[triangle]]
+id = "IOP_MOM"
+short_name = "production_growth_mom"
+title = "Index of Production month-on-month growth"
+measure = "Percent MoM; CVM; SA"
+frequency = "M"
+dataset_path = "/economy/economicoutputandproductivity/output/datasets/revisionstotheindexofproduction"
+member_pattern = "production - 1 month"
+
+[[triangle]]
+id = "IOM_MOM"
+short_name = "manufacturing_growth_mom"
+title = "Index of Manufacturing month-on-month growth"
+measure = "Percent MoM; CVM; SA"
+frequency = "M"
+dataset_path = "/economy/economicoutputandproductivity/output/datasets/revisionstotheindexofproduction"
+member_pattern = "manufacturing - 1 month"
+
+[[triangle]]
+id = "RSI_MOM"
+short_name = "retail_sales_growth_mom"
+title = "Retail Sales Index month-on-month growth"
+measure = "Percent MoM; volume; SA"
+frequency = "M"
+dataset_path = "/businessindustryandtrade/retailindustry/datasets/retailsalesrevisionstriangles1monthgrowth"
+
+[[triangle]]
+id = "CON_MOM"
+short_name = "construction_growth_mom"
+title = "Construction output month-on-month growth, Great Britain"
+measure = "Percent MoM; CVM; SA"
+frequency = "M"
+dataset_path = "/businessindustryandtrade/constructionindustry/datasets/outputintheconstructionindustryrevisionstriangle1monthgrowth"
+
+[[triangle]]
+id = "IKBH"
+short_name = "exports"
+title = "Total trade exports, current prices, seasonally adjusted"
+measure = "£m; CP; SA"
+frequency = "M"
+dataset_path = "/economy/nationalaccounts/balanceofpayments/datasets/totaltradeexportsuktraderevisions"
+sheet_pattern = "^(total trade - )?triangle$"
+
+[[triangle]]
+id = "IKBI"
+short_name = "imports"
+title = "Total trade imports, current prices, seasonally adjusted"
+measure = "£m; CP; SA"
+frequency = "M"
+dataset_path = "/economy/nationalaccounts/balanceofpayments/datasets/totaltradeimportsuktraderevisions"
+sheet_pattern = "^(total trade - )?triangle$"
+
+[[triangle]]
+id = "BCJD"
+short_name = "claimant_count"
+title = "UK claimant count"
+measure = "Thousands; SA"
+frequency = "M"
+dataset_path = "/employmentandlabourmarket/peoplenotinwork/outofworkbenefits/datasets/claimantcountrevisionstrianglecla02"
+
+[[triangle]]
+id = "MGSX"
+short_name = "unemployment_rate"
+title = "UK unemployment rate, aged 16 and over"
+measure = "Percent; aged 16+; SA"
+frequency = "M"
+basis = "3m_ending"
+dataset_path = "/employmentandlabourmarket/peoplenotinwork/unemployment/datasets/unemploymentraterevisionstriangleunem04"
+
+[[triangle]]
+id = "DYDC"
+short_name = "workforce_jobs"
+title = "UK workforce jobs"
+measure = "Thousands; SA"
+frequency = "Q"
+dataset_path = "/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/datasets/workforcejobsrevisionstrianglejobs06"
+
+[[triangle]]
+id = "YBHA_QOQ"
+short_name = "gdp_nominal_growth_qoq"
+title = "GDP at current market prices quarter-on-quarter growth, seasonally adjusted"
+measure = "Percent QoQ; CP; SA"
+frequency = "Q"
+dataset_path = "/economy/grossdomesticproductgdp/datasets/revisionstrianglesforukgdpybhagrowthrates"
+
+[[triangle]]
+id = "YBGB_YOY"
+short_name = "gdp_deflator_growth_yoy"
+title = "GDP implied deflator growth on the same quarter a year ago"
+measure = "Percent YoY; SA"
+frequency = "Q"
+dataset_path = "/economy/grossdomesticproductgdp/datasets/revisionstrianglesforukgdpdeflatorquarteronquarterayearago"
+
+[[triangle]]
+id = "NRJS"
+short_name = "household_saving_ratio"
+title = "Households and NPISH saving ratio"
+measure = "Percent; CP; SA"
+frequency = "Q"
+dataset_path = "/economy/grossdomesticproductgdp/datasets/revisionstrianglesforukhouseholdssavingratio"
+sheet_pattern = "^NRJS_triangle$"
+
+[[triangle]]
+id = "LF24"
+short_name = "employment_rate"
+title = "UK employment rate, aged 16 to 64"
+measure = "Percent; aged 16-64; SA"
+frequency = "M"
+basis = "3m_ending"
+dataset_path = "/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/datasets/employmentraterevisionstriangleemp05"
+
+# ===================================================== Real-time databases
+
+[[realtime_db]]
+id = "ABMI"
+short_name = "gdp"
+title = "Gross domestic product, chained volume measures (constant prices before 2003)"
+measure = "£m; CVM; SA"
+dataset_path = "/economy/grossdomesticproductgdp/datasets/realtimedatabaseforukgdpabmi"
+sheet_pattern = '^\d{4} -'
+
+[[realtime_db]]
+id = "YBHA"
+short_name = "gdp_nominal"
+title = "Gross domestic product at current market prices"
+measure = "£m; CP; SA"
+dataset_path = "/economy/grossdomesticproductgdp/datasets/realtimedatabaseforukgdpybha"
+sheet_pattern = '^\d{4} -'
+
+[[realtime_db]]
+id = "ABJR"
+short_name = "household_consumption"
+title = "Household final consumption expenditure, chained volume measures"
+measure = "£m; CVM; SA"
+dataset_path = "/economy/grossdomesticproductgdp/datasets/realtimedatabaseforukgdpcomponentsfortheexpenditureapproachtothemeasureofgdp"
+sheet_pattern = "^ABJR$"
+
+[[realtime_db]]
+id = "NPQT"
+short_name = "gfcf"
+title = "Total gross fixed capital formation, chained volume measures"
+measure = "£m; CVM; SA"
+dataset_path = "/economy/grossdomesticproductgdp/datasets/realtimedatabaseforukgdpcomponentsfortheexpenditureapproachtothemeasureofgdp"
+sheet_pattern = "^NPQT$"
+
+[[realtime_db]]
+id = "NMRY"
+short_name = "government_consumption"
+title = "General government final consumption expenditure, chained volume measures"
+measure = "£m; CVM; SA"
+dataset_path = "/economy/grossdomesticproductgdp/datasets/realtimedatabaseforukgdpcomponentsfortheexpenditureapproachtothemeasureofgdp"
+sheet_pattern = "^NMRY$"
+
+[[realtime_db]]
+id = "CAFU"
+short_name = "inventories_change"
+title = "Change in inventories, chained volume measures"
+measure = "£m; CVM; SA"
+dataset_path = "/economy/grossdomesticproductgdp/datasets/realtimedatabaseforukgdpcomponentsfortheexpenditureapproachtothemeasureofgdp"
+sheet_pattern = "^CAFU$"
+
+[[realtime_db]]
+id = "IKBK"
+short_name = "exports_real"
+title = "Total exports, chained volume measures"
+measure = "£m; CVM; SA"
+dataset_path = "/economy/grossdomesticproductgdp/datasets/realtimedatabaseforukgdpcomponentsfortheexpenditureapproachtothemeasureofgdp"
+sheet_pattern = "^IKBK$"
+
+[[realtime_db]]
+id = "IKBL"
+short_name = "imports_real"
+title = "Total imports, chained volume measures"
+measure = "£m; CVM; SA"
+dataset_path = "/economy/grossdomesticproductgdp/datasets/realtimedatabaseforukgdpcomponentsfortheexpenditureapproachtothemeasureofgdp"
+sheet_pattern = "^IKBL$"
+
+[[realtime_db]]
+id = "NPEL"
+short_name = "business_investment"
+title = "Total business investment, chained volume measures"
+measure = "£m; CVM; SA"
+dataset_path = "/economy/grossdomesticproductgdp/datasets/businessinvestmentrealtimedatabase"
+sheet_pattern = "^Data_Table$"

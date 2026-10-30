@@ -1,22 +1,36 @@
 [project]
 name = "real-time-data"
 version = "0.1.0"
-description = "Add your description here"
+description = "A real-time (vintage) archive of UK macroeconomic data from the ONS"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "beautifulsoup4>=4.13.4",
-    "html5lib>=1.1",
-    "jupyterlab>=4.4.5",
     "loguru>=0.7.3",
-    "lxml>=6.0.0",
     "numpy>=2.3.1",
     "openpyxl>=3.1.5",
     "pandas>=2.3.1",
-    "pre-commit-hooks>=5.0.0",
-    "pre-commit>=4.2.0",
-    "toml>=0.10.2",
     "xlrd>=2.0.2",
     "pyarrow>=21.0.0",
-    "fastparquet>=2024.11.0",
+    "requests>=2.34.2",
 ]
+
+[dependency-groups]
+dev = [
+    "jupyterlab>=4.6.5",
+    "pre-commit>=4.7.0",
+    "pre-commit-hooks>=6.0.0",
+    "pytest>=9.2.0",
+]
+
+[project.scripts]
+realtime = "realtime.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["realtime"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
