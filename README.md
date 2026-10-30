@@ -116,7 +116,7 @@ RECOMMENDED_SERIES = [
 To rebuild the table's start years from the archive itself, with [DuckDB](https://duckdb.org/):
 
 ```bash
-duckdb -c "SELECT series_id, any_value(title) AS title, year(min(vintage_date)) AS vintages_from, count(*) AS rows FROM 'scratch/realtimedata.parquet' WHERE series_id IN ('IHYQ','ECYX','YBHA_QOQ','YBGB_YOY','ABJR_QOQ','NMRY_QOQ','NPQT_QOQ','KG7P','IKBK_QOQ','IKBL_QOQ','IOP_MOM','IOM_MOM','IOS_MOM','CON_MOM','RSI_MOM','D7G7','CHAW','MGSX','LF24','BCJD','NRJS') GROUP BY series_id ORDER BY vintages_from, series_id"
+duckdb -c "SELECT series_id, any_value(title) AS title, year(min(vintage_date)) AS vintages_from, year(max(vintage_date)) AS vintages_to, count(*) AS rows FROM 'scratch/realtimedata.parquet' WHERE series_id IN ('IHYQ','ECYX','YBHA_QOQ','YBGB_YOY','ABJR_QOQ','NMRY_QOQ','NPQT_QOQ','KG7P','IKBK_QOQ','IKBL_QOQ','IOP_MOM','IOM_MOM','IOS_MOM','CON_MOM','RSI_MOM','D7G7','CHAW','MGSX','LF24','BCJD','NRJS') GROUP BY series_id ORDER BY vintages_from, series_id"
 ```
 
 Things to be aware of:
