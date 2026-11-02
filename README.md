@@ -1,5 +1,7 @@
 # real-time-data
 
+[![DOI](https://zenodo.org/badge/427734171.svg)](https://doi.org/10.5281/zenodo.23900406)
+
 ## Introduction
 
 This repo builds a real-time (vintage) archive of UK economic data, in the spirit of [ALFRED](https://alfred.stlouisfed.org/). For every series it records not just the latest numbers, but what was published on each date: the first estimate and every revision since. The figures currently come from two publishers: the Office for National Statistics (ONS) and the Bank of England.
