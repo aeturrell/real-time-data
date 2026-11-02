@@ -21,6 +21,12 @@ dev = [
     "pre-commit-hooks>=6.0.0",
     "pytest>=9.2.0",
 ]
+docs = [
+    "ipykernel>=7.4.0",
+    "matplotlib>=3.11.2",
+    "nbformat>=5.11.1",
+    "pyyaml>=6.0.3",
+]
 
 [project.scripts]
 realtime = "realtime.cli:main"

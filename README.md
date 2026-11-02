@@ -161,6 +161,16 @@ When several sources cover a series, a weaker source is used only in months wher
 
 Rolling three-month labour market figures are marked with `basis = "3m_ending"` in `series.toml`, rather than being recognised from page labels. ONS labels them with their three-month window ("2015 AUG-OCT"), except on the first saved versions of October 2015, which give only the middle month.
 
+## Documentation
+
+The `docs/` folder holds a [Quarto](https://quarto.org/) website: a landing page and a guide to the data. Its charts and figures are worked out from your local copy of the data, so run `uv run realtime build` and `uv run realtime benchmark` first. Then, with Quarto installed, run
+
+```bash
+uv run --group docs quarto render docs
+```
+
+The site is written to `docs/_site/`.
+
 ## Further development
 
 See `PLAN.md` for the phased plan. Still to come: archived ONS pages from the National Archives, and the ONS API.

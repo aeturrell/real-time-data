@@ -134,3 +134,11 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+/.quarto/
+**/*.quarto_ipynb
+
+# Quarto docs
+docs/_site/
+docs/.quarto/
+docs/**/*.quarto_ipynb

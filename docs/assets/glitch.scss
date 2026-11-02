@@ -1,0 +1,262 @@
+/*-- scss:defaults --*/
+
+$static-grey: #1c1e24;
+$static-grey-deep: #14161b;
+$corrupted-violet: #5c2483;
+$scan-line-cyan: #00f5d4;
+$degauss-magenta: #ff2a85;
+$phosphor-amber: #ffb703;
+$electron-white: #f1f5f9;
+$oxide-slate: #64748b;
+$secondary-text: rgba(241, 245, 249, 0.74);
+
+$font-family-sans-serif: "Space Mono", "JetBrains Mono", ui-monospace, monospace;
+$font-family-monospace: "Space Mono", "JetBrains Mono", ui-monospace, monospace;
+$headings-font-family: "Saira Semi Condensed", "Arial Narrow", sans-serif;
+$headings-font-weight: 600;
+$font-size-root: 16px;
+$font-size-base: 0.95rem;
+$line-height-base: 1.5;
+
+$body-bg: $static-grey;
+$body-color: $electron-white;
+$link-color: $scan-line-cyan;
+$link-hover-color: $degauss-magenta;
+$headings-color: $electron-white;
+$primary: $scan-line-cyan;
+$secondary: $oxide-slate;
+$border-color: $corrupted-violet;
+$border-radius: 0;
+$border-radius-sm: 0;
+$border-radius-lg: 0;
+
+$navbar-bg: $static-grey-deep;
+$navbar-fg: $electron-white;
+$navbar-hl: $scan-line-cyan;
+$footer-bg: $static-grey-deep;
+$footer-fg: $secondary-text;
+$toc-color: $secondary-text;
+$toc-active-border: $scan-line-cyan;
+$toc-inactive-border: $corrupted-violet;
+$toc-font-size: 0.8rem;
+
+$code-color: $phosphor-amber;
+$code-bg: $static-grey-deep;
+$table-color: $electron-white;
+$table-border-color: $corrupted-violet;
+$table-bg: transparent;
+$text-muted: $secondary-text;
+
+/*-- scss:rules --*/
+
+body {
+  background-color: $static-grey;
+}
+
+h1, h2, h3, .h1, .h2, .h3, .quarto-title .title {
+  line-height: 1.15;
+}
+
+h1, .quarto-title .title {
+  font-size: clamp(2.2rem, 6vw, 3.2rem);
+}
+
+h2, .h2 {
+  font-size: 1.7rem;
+  margin-top: 2.6rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 2px solid $corrupted-violet;
+}
+
+h3, .h3 {
+  font-size: 1.25rem;
+  margin-top: 1.8rem;
+}
+
+a {
+  text-underline-offset: 0.2em;
+}
+
+a:hover {
+  text-shadow: 0 0 10px rgba($degauss-magenta, 0.55);
+}
+
+a:focus-visible, button:focus-visible {
+  outline: 2px solid $scan-line-cyan;
+  outline-offset: 2px;
+}
+
+.navbar {
+  border-bottom: 2px solid $corrupted-violet;
+}
+
+.navbar-brand, .navbar-title {
+  font-family: $headings-font-family;
+  font-weight: 600;
+}
+
+.nav-footer {
+  border-top: 2px solid $corrupted-violet;
+  font-size: 0.8rem;
+}
+
+.lead-text {
+  font-size: 1.1rem;
+  max-width: 62ch;
+}
+
+.tag {
+  display: inline-block;
+  font-family: "Silkscreen", $font-family-monospace;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: $phosphor-amber;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  gap: 0.75rem;
+  margin: 1.5rem 0 2rem;
+}
+
+.stat, .scan-panel {
+  position: relative;
+  border: 1px solid $corrupted-violet;
+  background: $static-grey-deep;
+}
+
+.stat {
+  padding: 0.8rem 0.9rem;
+}
+
+.stat::after, .scan-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0.18) 0 1px, transparent 1px 4px);
+}
+
+.stat p {
+  margin: 0;
+}
+
+.stat-value {
+  font-family: "JetBrains Mono", $font-family-monospace;
+  font-weight: 700;
+  font-size: 1.5rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  color: $scan-line-cyan;
+}
+
+.stat-label {
+  font-size: 0.78rem;
+  color: $secondary-text;
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+}
+
+.button-row p {
+  display: contents;
+}
+
+.button-row a {
+  padding: 0.55rem 1rem;
+  border: 2px solid $scan-line-cyan;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 0 15px rgba(0, 245, 212, 0.3);
+}
+
+.button-row a:hover {
+  border-color: $degauss-magenta;
+  box-shadow: 0 0 15px rgba(255, 42, 133, 0.35);
+  color: $degauss-magenta;
+}
+
+figure.figure, .quarto-figure {
+  margin: 1.5rem 0;
+}
+
+.quarto-figure figure {
+  border: 1px solid $corrupted-violet;
+  background: $static-grey;
+  box-shadow: 0 0 15px rgba(92, 36, 131, 0.55);
+  padding: 0.5rem;
+  overflow-x: auto;
+}
+
+.quarto-figure img {
+  min-width: 620px;
+  max-width: 100%;
+  height: auto;
+}
+
+figcaption, .figure-caption, .quarto-float-caption {
+  color: $secondary-text;
+  font-size: 0.8rem;
+  padding: 0.5rem 0.25rem 0.25rem;
+  min-width: 0;
+}
+
+table, .table {
+  font-size: 0.82rem;
+  --bs-table-bg: transparent;
+  --bs-table-color: #{$electron-white};
+}
+
+thead th {
+  font-family: "Silkscreen", $font-family-monospace;
+  font-weight: 400;
+  text-transform: uppercase;
+  color: $phosphor-amber;
+  border-bottom: 2px solid $scan-line-cyan !important;
+}
+
+div.sourceCode, pre.sourceCode {
+  border: 1px solid $corrupted-violet;
+  background: $static-grey-deep !important;
+}
+
+p code:not(.sourceCode), li code:not(.sourceCode), td code:not(.sourceCode) {
+  background: $static-grey-deep;
+  padding: 0.05em 0.3em;
+}
+
+.callout {
+  border-radius: 0 !important;
+  background: $static-grey-deep;
+}
+
+.callout-header {
+  background: transparent !important;
+}
+
+#TOC .nav-link, #quarto-margin-sidebar .nav-link {
+  color: $secondary-text;
+}
+
+#TOC .nav-link.active, #quarto-margin-sidebar .nav-link.active {
+  color: $scan-line-cyan;
+}
+
+#toc-title {
+  font-family: "Silkscreen", $font-family-monospace;
+  font-weight: 400;
+  text-transform: uppercase;
+  color: $phosphor-amber;
+}
+
+@media (prefers-contrast: more) {
+  .stat::after, .scan-panel::after {
+    display: none;
+  }
+}
