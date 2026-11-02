@@ -1,0 +1,882 @@
+---
+title: "Guide to the data"
+subtitle: "What the archive holds, how it was put together, and how far to rely on it"
+jupyter: python3
+---
+
+```{python}
+import io
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from IPython.display import Markdown
+from loguru import logger
+from matplotlib.colors import BoundaryNorm, LinearSegmentedColormap, ListedColormap
+from matplotlib.patches import Patch
+from matplotlib.ticker import PercentFormatter
+
+import _chart_theme as theme
+from realtime import read_archive, revision_triangle
+from realtime.benchmark import (
+    DAYS_AFTER_EDITION,
+    DAYS_BEFORE_EDITION,
+    LOOSE_TOLERANCE,
+    ROUNDING_TOLERANCE,
+    GDP_BENCHMARK_SERIES,
+)
+from realtime.settings import OECD_GDP_GROWTH_PATH
+from realtime.validate import (
+    growth_agreement,
+    growth_agreement_report,
+    look_ahead_summary,
+    mixed_basis_summary,
+)
+
+logger.disable("realtime")
+theme.apply_chart_theme()
+
+archive = read_archive()
+archive["vintage_year"] = archive["vintage_date"].dt.year
+OUTSIDE_CHECKS_DATE = "2 November 2026"
+OECD_COMPARISON = """benchmark,oecd,ours,compared,editions,first_edition,strict_within_0.05,nearby_within_0.05,nearby_within_0.15
+"GDP volume, q/q",B1GQ_Q,ABMI,3992,333,1999-02,0.992,1.0,1.0
+"GDP volume, q/q (triangle)",B1GQ_Q,IHYQ,3992,333,1999-02,0.97,0.986,0.999
+"GDP current prices, q/q",B1GQ_V,YBHA,3989,333,1999-02,0.981,0.999,1.0
+"Government consumption, q/q",P3_S13_Q,NMRY,3991,333,1999-02,0.916,0.94,0.998
+"Gross fixed capital formation, q/q",P51G_Q,NPQT,3991,333,1999-02,0.866,0.887,0.997
+"Exports, q/q",P6_Q,IKBK,3991,333,1999-02,0.941,0.97,0.998
+"Imports, q/q",P7_Q,IKBL,3991,333,1999-02,0.93,0.959,0.999
+"GDP deflator, y/y (triangle)",B1GQ_D,YBGB_YOY,2947,246,2006-05,0.869,0.902,1.0
+"Production, m/m (triangle)",PRVM,IOP_MOM,3938,333,1999-02,0.662,0.796,0.993
+"Production, m/m",PRVM,K222,1579,132,2015-11,0.958,0.985,1.0
+"RPI, y/y",CP,CHAW,1140,95,1999-02,1.0,1.0,1.0
+"CPI, y/y",CP,D7G7,1439,120,2008-01,0.714,0.714,1.0
+"CPIH, y/y",CP,L55O,1127,94,2019-01,0.758,0.758,1.0"""
+benchmark = pd.read_csv(io.StringIO(OECD_COMPARISON))
+look_ahead = look_ahead_summary(archive)
+agreement = growth_agreement_report(archive)
+
+PERCENT = 100
+TIGHT_POINTS = f"{ROUNDING_TOLERANCE:.2f}"
+LOOSE_POINTS = f"{LOOSE_TOLERANCE:.2f}"
+BASE_PERIOD = pd.Period("1997Q1", "Q")
+TYPING_ERROR_SERIES = "NPQT_QOQ"
+TYPING_ERROR_PERIOD = pd.Period("2002Q2", "Q")
+EARLY_VINTAGES_END = "1998-12-31"
+LABOUR_LEVEL_SERIES = "MGRZ"
+MONTHLY_GDP_SERIES = "ECYX"
+HISTORY_EXAMPLE_SERIES = "IHYQ"
+GAP_CUTOFF_YEAR = 2000
+LATE_START_YEAR = 2015
+SURVEY_NAMES = {
+    "BICS": "Business Insights and Conditions Survey",
+    "DMP": "Decision Maker Panel",
+    "CCS": "Credit Conditions Survey",
+    "AGENTS": "Agents' scores",
+}
+gap_cutoff_year = f"{GAP_CUTOFF_YEAR}"
+
+
+def share_text(share: float, decimals: int = 0) -> str:
+    """Formats a share between zero and one as a percentage.
+
+    Args:
+        share: The share.
+        decimals: The number of decimal places to show.
+
+    Returns:
+        The percentage as text, for example "65%".
+    """
+    return f"{share * PERCENT:.{decimals}f}%"
+
+
+def signed(value: float) -> str:
+    """Formats a growth rate to one decimal place with a proper minus sign.
+
+    Args:
+        value: The growth rate.
+
+    Returns:
+        The rate as text, for example "−1.5".
+    """
+    return f"{value:.1f}".replace("-", "−")
+
+
+is_survey = archive["dataset_id"].astype(str).isin(SURVEY_NAMES)
+official = archive.loc[~is_survey]
+survey_series_count = f"{archive.loc[is_survey, 'series_id'].nunique()}"
+source_shares = archive["route"].value_counts(normalize=True)
+precision_shares = archive["vintage_date_precision"].value_counts(normalize=True)
+release_counts = archive["release_type"].value_counts()
+
+series_count = f"{archive['series_id'].nunique()}"
+dataset_count = f"{archive['dataset_id'].nunique()}"
+row_count = f"{len(archive):,}"
+vintage_date_count = f"{archive['vintage_date'].nunique():,}"
+first_vintage_date = f"{archive['vintage_date'].min():%b %Y}"
+last_vintage_date = f"{archive['vintage_date'].max():%b %Y}"
+last_retrieved = f"{archive['retrieved_at'].max():%-d %B %Y}"
+first_estimate_count = f"{release_counts['first']:,}"
+revision_count = f"{release_counts['revision']:,}"
+history_count = f"{release_counts['history']:,}"
+day_precision_share = share_text(precision_shares["day"])
+page_history_share = share_text(source_shares["series_json"])
+source_route_count = f"{archive['route'].nunique()}"
+
+series_with_exact_dates_only = official.groupby("series_id", observed=True)[
+    "vintage_date"
+].min()
+series_from_2015 = f"{(series_with_exact_dates_only.dt.year >= LATE_START_YEAR).sum()}"
+series_before_2000 = f"{(series_with_exact_dates_only.dt.year < GAP_CUTOFF_YEAR).sum()}"
+late_start_year = f"{LATE_START_YEAR}"
+
+look_ahead_rows = int(look_ahead["rows"].sum()) if not look_ahead.empty else 0
+look_ahead_workforce_jobs = int(
+    look_ahead.loc[look_ahead["series_id"] == "DYDC", "rows"].sum()
+)
+look_ahead_share = share_text(look_ahead_rows / len(archive), 3)
+mixed_basis_count = f"{mixed_basis_summary(archive)['series_id'].nunique()}"
+oecd_series_count = f"{benchmark['ours'].nunique()}"
+oecd_edition_count = f"{benchmark['editions'].max()}"
+oecd_value_count = f"{benchmark['compared'].sum():,}"
+oecd_worst_loose = share_text(benchmark["nearby_within_0.15"].min(), 1)
+oecd_first_edition = pd.Period(benchmark["first_edition"].min(), "M").strftime("%B %Y")
+base_quarter = f"{BASE_PERIOD.year} Q{BASE_PERIOD.quarter}"
+base_year = f"{BASE_PERIOD.year}"
+
+exact_share_by_month = (
+    (official["vintage_date_precision"] == "day")
+    .groupby(official["vintage_date"].dt.to_period("M"))
+    .mean()
+)
+exact_dating_month = exact_share_by_month.index[exact_share_by_month == 0].max() + 1
+exact_dating_start = exact_dating_month.strftime("%B %Y")
+
+first_vintage_year = f"{archive['vintage_date'].min().year}"
+monthly_gdp_start = archive.loc[archive["series_id"] == MONTHLY_GDP_SERIES, "vintage_date"].min()
+monthly_gdp_month = f"{monthly_gdp_start:%B %Y}"
+monthly_gdp_year = f"{monthly_gdp_start.year}"
+
+oldest_row = archive.loc[archive["reference_period"].map(lambda period: period.start_time).idxmin()]
+oldest_period = f"{oldest_row['reference_period'].year}"
+oldest_table_year = f"{oldest_row['vintage_date'].year}"
+
+history_rows = archive.loc[
+    (archive["series_id"] == HISTORY_EXAMPLE_SERIES) & (archive["release_type"] == "history")
+]
+history_first_year = f"{history_rows['reference_period'].min().year}"
+history_last_year = f"{history_rows['reference_period'].max().year}"
+history_published = f"{history_rows['vintage_date'].min():%B %Y}"
+
+typing_error = (
+    archive.loc[
+        (archive["series_id"] == TYPING_ERROR_SERIES)
+        & (archive["reference_period"] == TYPING_ERROR_PERIOD)
+    ]
+    .sort_values("vintage_date")
+    .iloc[0]
+)
+typing_error_month = f"{typing_error['vintage_date']:%B %Y}"
+typing_error_value = signed(typing_error["value"])
+typing_error_quarter = f"{TYPING_ERROR_PERIOD.year} Q{TYPING_ERROR_PERIOD.quarter}"
+
+other_look_ahead = look_ahead.loc[look_ahead["series_id"] != "DYDC"]
+other_look_ahead_rows = f"{other_look_ahead['rows'].sum()}"
+other_look_ahead_example = other_look_ahead["example"].iloc[0] if not other_look_ahead.empty else "none"
+
+gap_year_count = agreement["largest_at"].str.extract(r"as of (\d{4})")[0].astype(int).lt(GAP_CUTOFF_YEAR).sum()
+gaps_before_2000 = f"{gap_year_count}"
+growth_pair_count = f"{len(agreement)}"
+
+early_quarterly = archive.loc[
+    (archive["frequency"] == "Q") & (archive["vintage_date"] <= EARLY_VINTAGES_END)
+]
+early_agreement = growth_agreement(early_quarterly, "IHYQ", "ABMI")
+early_first_year = f"{early_quarterly.loc[early_quarterly['series_id'] == 'IHYQ', 'vintage_date'].min().year}"
+early_last_year = f"{pd.Timestamp(EARLY_VINTAGES_END).year}"
+early_tight_share = share_text(early_agreement["share_within_rounding"])
+early_loose_share = share_text(early_agreement["share_within_0.15"])
+early_largest_gap = f"{early_agreement['largest_difference']:.1f}"
+
+labour_vintages = pd.Series(
+    sorted(archive.loc[archive["series_id"] == LABOUR_LEVEL_SERIES, "vintage_date"].unique())
+)
+labour_gap_position = labour_vintages.diff().idxmax()
+labour_gap_start = f"{labour_vintages[labour_gap_position - 1]:%B %Y}"
+labour_gap_end = f"{labour_vintages[labour_gap_position]:%B %Y}"
+
+window_days_before = f"{DAYS_BEFORE_EDITION}"
+window_days_after = f"{DAYS_AFTER_EDITION}"
+```
+
+::: {.lead-text}
+This page describes what you have when you open the archive. It covers what the data consist of, where they came from, the choices made in assembling them, and the checks they have passed. It avoids code and formulas.
+:::
+
+The figures on this page are worked out from the archive each time the site is built. These ones reflect data downloaded up to `{python} last_retrieved`.
+
+## What you have
+
+The archive is a single table. Each row is one published statement about the UK economy: **on this date, the value of this series for this period was this number.**
+
+Two dates matter, and keeping them apart is the point of the archive:
+
+- The **reference period** is the time the number describes, such as a particular quarter or month.
+- The **vintage date** is the day the number was published. A "vintage" is the full set of figures as they stood on a given date, like a year on a bottle of wine.
+
+A row exists only when something new was said, which means a period's first figure or a later change to it. If a number is republished unchanged, no row is added. You can still rebuild the figures as they stood on any date, because the most recent row on or before that date is the figure that was then in force. ALFRED, the St. Louis Fed's archive of US data, stores its data the same way.
+
+::: {.stat-grid}
+::: {.stat}
+[`{python} series_count`]{.stat-value}
+
+[series]{.stat-label}
+:::
+::: {.stat}
+[`{python} row_count`]{.stat-value}
+
+[rows]{.stat-label}
+:::
+::: {.stat}
+[`{python} vintage_date_count`]{.stat-value}
+
+[distinct publication dates]{.stat-label}
+:::
+::: {.stat}
+[`{python} first_vintage_date`]{.stat-value}
+
+[earliest publication]{.stat-label}
+:::
+::: {.stat}
+[`{python} last_vintage_date`]{.stat-value}
+
+[latest publication]{.stat-label}
+:::
+:::
+
+Of the rows, `{python} first_estimate_count` are first estimates, `{python} revision_count` are revisions, and `{python} history_count` are old figures that the archive first saw long after the period ended. Those last ones are labelled `history` and should not be treated as first estimates.
+
+## What it covers
+
+The series are the ones an economist would reach for when tracking the UK economy: GDP and its components, output by industry, prices, the labour market, trade, and household and government finances, along with `{python} survey_series_count` results from four business surveys. Most official series come from the Office for National Statistics (ONS), the UK's national statistics office, and have a CDID, which is ONS's four-character code for a time series (`ABMI` is GDP, for example). Where ONS publishes a growth-rate table with no code of its own, the archive uses a label based on the matching code, such as `IOS_MOM` for monthly growth in services. Survey series have codes of our own, such as `DMP_SALES_REALISED_MEAN`.
+
+```{python}
+#| label: fig-coverage
+#| fig-cap: "Left: how many separate publications are held for each series in each year. Right: the span of periods that each series' figures describe. Series are grouped by subject, and each survey is shown as one row because all its series come from the same files."
+#| fig-alt: "A heatmap with one row per series and one column per year of publication, beside a panel of bars showing the range of periods each series covers. Only GDP reaches back to the earliest years. Some series begin decades later and many begin only in the most recent stretch. The periods described stretch back further than the publications. The four business surveys appear together as a final group and begin much later than GDP."
+#| column: page-right
+
+SERIES_GROUPS = {
+    "GDP": ["ABMI", "IHYQ", "ABMI_YOY", "YBHA", "YBHA_QOQ", "YBGB", "YBGB_YOY", "ECY2", "ECYX"],
+    "Spending and investment": [
+        "ABJR", "ABJR_QOQ", "ABJQ", "NMRY", "NMRY_QOQ", "NPQT", "NPQT_QOQ", "NPEL", "KG7P", "CAFU",
+    ],
+    "Trade": [
+        "IKBH", "IKBI", "IKBJ", "IKBK", "IKBK_QOQ", "IKBL", "IKBL_QOQ",
+        "BQKQ_QOQ", "BQKO_QOQ", "IKBE_QOQ", "IKBF_QOQ", "HBOP",
+    ],
+    "Output by industry": [
+        "K222", "IOP_MOM", "K22A", "IOM_MOM", "S2KU", "IOS_MOM", "CON_MOM", "J5EK", "RSI_MOM", "LZVD",
+    ],
+    "Prices": ["CHAW", "D7BT", "D7G7", "L55O", "DKO8", "D7NN", "GB7S", "GHIP"],
+    "Labour market": [
+        "MGSX", "MGSC", "LF24", "MGRZ", "LF2S", "YBUS", "BCJD", "DYDC", "AP2Y", "KAB9", "KAC2", "KAI9", "KAJ4",
+    ],
+    "Household and public finances": ["NRJR", "NRJS", "J5II"],
+    "Business surveys": list(SURVEY_NAMES),
+}
+LABEL_REPLACEMENTS = {
+    "gdp": "GDP", "gva": "GVA", "gfcf": "Fixed investment", "cpi": "CPI", "cpih": "CPIH",
+    "rpi": "RPI", "ppi": "PPI", "qoq": "q/q", "mom": "m/m", "yoy": "y/y",
+}
+HEAT_CLASS_EDGES = [0.5, 2.5, 6.5, 12.5, 200]
+HEAT_CLASS_LABELS = ["1–2", "3–6", "7–12", "13+"]
+HEAT_CLASS_COLOURS = ["#17524F", "#0E8A7E", "#07BFA9", theme.SCAN_LINE_CYAN]
+CELL_GAP = 0.5
+RANGE_BAR_WIDTH = 2.6
+RANGE_TICK_YEARS = [1950, 1975, 2000, 2025]
+HEAT_TICK_YEARS = [1970, 1985, 2000, 2015]
+ROW_HEIGHT_INCHES = 0.145
+GROUP_GAP_ROWS = 1.4
+EXTRA_HEIGHT_INCHES = 1.5
+FIGURE_WIDTH_INCHES = 10.5
+SMALL_LABEL_SIZE = 7.5
+GROUP_LABEL_SIZE = 8
+
+
+def readable_label(series_id: str, short_name: str) -> str:
+    """Turns a short name into a chart label, such as "GDP growth q/q".
+
+    Args:
+        series_id: The series code.
+        short_name: The series' short name.
+
+    Returns:
+        The label followed by the code.
+    """
+    words = [LABEL_REPLACEMENTS.get(word, word) for word in short_name.split("_")]
+    words[0] = words[0][0].upper() + words[0][1:]
+    return f"{' '.join(words)} · {series_id}"
+
+
+chart_rows = archive["series_id"].astype(str).where(~is_survey, archive["dataset_id"].astype(str))
+short_names = archive.groupby("series_id", observed=True)["short_name"].first().astype(str)
+survey_series_counts = archive.loc[is_survey].groupby("dataset_id", observed=True)["series_id"].nunique()
+row_labels = {
+    survey: f"{name} · {survey_series_counts[survey]} series" for survey, name in SURVEY_NAMES.items()
+}
+vintage_counts = (
+    archive.assign(chart_row=chart_rows)
+    .drop_duplicates(["chart_row", "vintage_date"])
+    .groupby(["chart_row", "vintage_year"], observed=True)
+    .size()
+    .unstack(fill_value=0)
+)
+all_years = range(archive["vintage_year"].min(), archive["vintage_year"].max() + 1)
+vintage_counts = vintage_counts.reindex(columns=all_years, fill_value=0)
+period_starts = archive["reference_period"].map(lambda period: period.start_time.year + period.start_time.dayofyear / 366)
+period_ends = archive["reference_period"].map(lambda period: period.end_time.year + period.end_time.dayofyear / 366)
+period_ranges = pd.DataFrame(
+    {"chart_row": chart_rows, "start": period_starts, "end": period_ends}
+).groupby("chart_row").agg(start=("start", "min"), end=("end", "max"))
+
+row_positions: dict[str, float] = {}
+group_positions: dict[str, float] = {}
+next_row = 0.0
+for group_name, group_series in SERIES_GROUPS.items():
+    group_positions[group_name] = next_row
+    for series_id in group_series:
+        next_row += 1
+        row_positions[series_id] = next_row
+    next_row += GROUP_GAP_ROWS
+
+missing_from_groups = set(chart_rows) - set(row_positions)
+assert not missing_from_groups, f"Add these series to a group: {missing_from_groups}"
+
+figure, (heat_axes, range_axes) = plt.subplots(
+    1,
+    2,
+    sharey=True,
+    figsize=(FIGURE_WIDTH_INCHES, ROW_HEIGHT_INCHES * next_row + EXTRA_HEIGHT_INCHES),
+    gridspec_kw={"width_ratios": [2.6, 1], "wspace": 0.03},
+)
+heat_colours = ListedColormap(HEAT_CLASS_COLOURS)
+heat_colours.set_bad(theme.STATIC_GREY)
+heat_norm = BoundaryNorm(HEAT_CLASS_EDGES, heat_colours.N)
+year_edges = np.arange(all_years[0], all_years[-1] + 2)
+
+for series_id, row in row_positions.items():
+    counts = vintage_counts.loc[series_id].to_numpy(dtype=float)
+    counts[counts == 0] = np.nan
+    heat_axes.pcolormesh(
+        year_edges,
+        [row - 0.5, row + 0.5],
+        np.ma.masked_invalid(counts[np.newaxis, :]),
+        cmap=heat_colours,
+        norm=heat_norm,
+        edgecolors=theme.STATIC_GREY,
+        linewidth=CELL_GAP,
+    )
+    range_axes.plot(
+        [period_ranges.loc[series_id, "start"], period_ranges.loc[series_id, "end"]],
+        [row, row],
+        color=theme.PHOSPHOR_AMBER,
+        linewidth=RANGE_BAR_WIDTH,
+        solid_capstyle="butt",
+    )
+
+for group_name, position in group_positions.items():
+    heat_axes.text(
+        all_years[0],
+        position - 0.05,
+        group_name.upper(),
+        color=theme.ELECTRON_WHITE,
+        fontfamily=theme.TAG_FONT,
+        fontsize=GROUP_LABEL_SIZE,
+        va="center",
+    )
+
+heat_axes.set_yticks(
+    list(row_positions.values()),
+    [
+        row_labels.get(series_id) or readable_label(series_id, short_names[series_id])
+        for series_id in row_positions
+    ],
+    fontsize=SMALL_LABEL_SIZE,
+)
+heat_axes.set_ylim(next_row - GROUP_GAP_ROWS + 0.5, -0.8)
+heat_axes.set_xlim(year_edges[0], year_edges[-1])
+heat_axes.set_xticks(HEAT_TICK_YEARS)
+heat_axes.tick_params(axis="y", length=0)
+heat_axes.grid(axis="y", visible=False)
+range_axes.set_xticks(RANGE_TICK_YEARS)
+range_axes.tick_params(axis="y", length=0)
+range_axes.grid(axis="y", visible=False)
+range_axes.spines["left"].set_visible(False)
+heat_axes.set_xlabel("Year of publication")
+range_axes.set_xlabel("Period described")
+theme.add_chart_tag(heat_axes, "Publications held per year")
+theme.add_chart_tag(range_axes, "Periods covered")
+heat_axes.legend(
+    handles=[Patch(color=colour, label=label) for colour, label in zip(HEAT_CLASS_COLOURS, HEAT_CLASS_LABELS)],
+    fontsize=SMALL_LABEL_SIZE,
+    loc="lower right",
+    bbox_to_anchor=(1, 1),
+    borderaxespad=0,
+    ncol=len(HEAT_CLASS_LABELS),
+    columnspacing=1,
+    handlelength=1,
+    labelcolor=theme.SECONDARY_TEXT,
+)
+plt.show()
+```
+
+How to read the chart:
+
+- **Depth varies a lot between series.** GDP is held back to `{python} first_vintage_year`. `{python} series_before_2000` series have publications from before `{python} gap_cutoff_year`. `{python} series_from_2015` official series start in `{python} late_start_year` or later. Most of these rely on the ONS website's own page history, which begins around then, and a few only began being published later (monthly GDP dates from `{python} monthly_gdp_year`).
+- **A step up from `{python} exact_dating_start`.** The band of publications thickens sharply from that point, because that is when the page histories begin.
+- **Periods described reach further back than publications.** A table published in `{python} oldest_table_year` can include figures for `{python} oldest_period`. The left panel shows when the archive knows something was said, and the right panel shows what it was said about.
+
+A single series can hold annual, quarterly and monthly figures at once, as ONS often publishes all three under one code. The `frequency` column separates them, so filter on it before comparing values. Rolling three-month labour market figures are marked in the `reference_period_basis` column and stored against the month the window ends.
+
+Many indicators appear twice, once as a level (`ABMI`, GDP in pounds) and once as a growth rate (`IHYQ`, GDP growth on the previous quarter). The two forms come from different ONS products and are kept apart on purpose.
+
+## Where it came from
+
+The figures come from files published by ONS and the Bank of England, gathered by `{python} source_route_count` routes. The `source` column names the publisher and the `route` column names the route:
+
+- **Past versions of ONS web pages.** ONS keeps every version of each series' page. These give exact publication dates, but mostly only from `{python} exact_dating_start`. [Example: GDP](https://www.ons.gov.uk/economy/grossdomesticproductgdp/timeseries/abmi/qna){target="_blank" rel="noopener"}.
+- **Revisions triangles.** These are ONS spreadsheets that lay out each estimate of a period as it was revised, row by row. They often reach back well before the page histories but record only the publication month. [Example: GDP revisions triangle](https://www.ons.gov.uk/economy/grossdomesticproductgdp/datasets/revisionstrianglesforukgdpabmi){target="_blank" rel="noopener"}.
+- **Real-time databases.** These are ONS spreadsheets holding each published version of GDP and its main expenditure components, by month. GDP goes back to `{python} first_vintage_year`. [Example: GDP real-time database](https://www.ons.gov.uk/economy/grossdomesticproductgdp/datasets/realtimedatabaseforukgdpabmi){target="_blank" rel="noopener"}.
+- **Never-revised series.** ONS does not revise some price measures, such as the Retail Prices Index, so today's figure is also the first one published. [Example: Retail Prices Index](https://www.ons.gov.uk/economy/inflationandpriceindices/timeseries/chaw/mm23){target="_blank" rel="noopener"}.
+- **Business surveys.** The Business Insights and Conditions Survey comes from ONS. The Decision Maker Panel, the Credit Conditions Survey and the Agents' scores come from the Bank of England. The first three publish a new file for each release, so each file is a true vintage. The Agents' scores come as a single file, so their dates are estimated from the Bank's report dates. [Example: Decision Maker Panel](https://www.bankofengland.co.uk/decision-maker-panel){target="_blank" rel="noopener"}.
+
+```{python}
+#| label: fig-sources
+#| fig-cap: "Share of the rows published in each year, by the route they came from. The older routes supply the early decades, the ONS page histories take over in the most recent years, and the surveys add a further layer from their own files."
+#| fig-alt: "A stacked bar chart of the share of rows per publication year by source. The earliest years come entirely from real-time databases, then revisions triangles supply a growing share, and in the most recent years past versions of ONS pages supply most rows, with the four survey routes making up part of the rest."
+
+AGENTS_BLUE = "#7C9CFF"
+SOURCE_NAMES = {
+    "series_json": "Past versions of ONS pages",
+    "triangle": "Revisions triangles",
+    "realtime_db": "Real-time databases",
+    "unrevised": "Never-revised series",
+    "ons_bics": "Business Insights and Conditions Survey",
+    "boe_dmp": "Decision Maker Panel",
+    "boe_ccs": "Credit Conditions Survey",
+    "boe_agents": "Agents' scores",
+}
+SOURCE_COLOURS = {
+    "series_json": theme.SCAN_LINE_CYAN,
+    "triangle": theme.DEGAUSS_MAGENTA,
+    "realtime_db": theme.PHOSPHOR_AMBER,
+    "unrevised": theme.OXIDE_SLATE,
+    "ons_bics": theme.ELECTRON_WHITE,
+    "boe_dmp": theme.CORRUPTED_VIOLET,
+    "boe_ccs": theme.SECONDARY_TEXT,
+    "boe_agents": AGENTS_BLUE,
+}
+BAR_GAP_WIDTH = 0.82
+SOURCES_FIGURE_SIZE = (8.6, 3.9)
+LEGEND_TOP = 1.34
+
+source_by_year = (
+    archive.groupby(["vintage_year", "route"], observed=True).size().unstack(fill_value=0)
+)
+source_by_year = source_by_year.div(source_by_year.sum(axis=1), axis=0)
+unnamed_routes = set(source_by_year.columns) - set(SOURCE_NAMES)
+assert not unnamed_routes, f"Add these routes to the chart: {unnamed_routes}"
+
+figure, axes = plt.subplots(figsize=SOURCES_FIGURE_SIZE)
+stack_base = np.zeros(len(source_by_year))
+for source, name in SOURCE_NAMES.items():
+    axes.bar(
+        source_by_year.index,
+        source_by_year[source],
+        bottom=stack_base,
+        width=BAR_GAP_WIDTH,
+        color=SOURCE_COLOURS[source],
+        label=name,
+    )
+    stack_base += source_by_year[source].to_numpy()
+
+axes.yaxis.set_major_formatter(PercentFormatter(xmax=1, decimals=0))
+axes.set_ylim(0, 1)
+axes.set_xlim(source_by_year.index.min() - 1, source_by_year.index.max() + 1)
+axes.grid(axis="x", visible=False)
+axes.set_xlabel("Year of publication")
+axes.legend(ncol=2, loc="upper left", bbox_to_anchor=(0, LEGEND_TOP), borderaxespad=0, labelcolor=theme.SECONDARY_TEXT)
+plt.show()
+```
+
+`{python} page_history_share` of rows come from page histories and `{python} day_precision_share` of rows are dated to the exact day. Each row records its source file, that file's fingerprint (a hash, which changes if the contents change) and when it was downloaded. Each raw file is kept, so the table can be rebuilt without going back to the publishers.
+
+## Decisions made along the way
+
+Nobody set out to publish this dataset, so assembling it took some judgement. These are the choices most likely to affect your results.
+
+**Dates err on the late side.** Dates must never suggest a figure was known before it was. Older sources give only a publication month, so those rows are dated to the last day of that month. A model using the archive may therefore see an old figure a few weeks after it came out, but never before. The `vintage_date_precision` column says how each date was arrived at: `day` for exact, `month` for the end of the known month, and `upper_bound` for the latest date it could have been.
+
+**Dating gets sharper from `{python} exact_dating_start`.** Before then, nearly all dates are month-ends. Afterwards, most are exact. If your work spans the join and needs a consistent definition of what was known when, move every date to the end of its month.
+
+**One source at a time.** When sources overlap, the one with the most exact dates wins for any month it covers. Page histories rank first, then triangles and never-revised series, then real-time databases. Weaker sources fill only the months the stronger ones lack.
+
+**Rounding differences are not revisions.** Two sources may give the same number to different decimal places. Values filling a gap are rounded to match the series' main source, so a change in rounding does not show up as a false revision.
+
+**Old figures are labelled as old.** When a period first appears in the archive more than a year after it ended, no source reaches back to its real first estimate. Such rows are marked `history`. For example, GDP growth for `{python} history_first_year` to `{python} history_last_year` first appears in a table from `{python} history_published`. To study first estimates, keep the rows labelled `first`.
+
+**Never-revised series are filled in backwards.** Before `{python} exact_dating_start`, CPI inflation and RPI come from today's figures, each dated to the end of the month after the month it describes. That is later than the true release, but never earlier.
+
+**Numbers are kept as published.** No rebasing, smoothing or correcting has been done. Levels therefore change units every few years, as ONS moves its figures to the prices of a new reference year, and the oldest GDP vintages are in the prices of much earlier years. Compare levels only within a single vintage. ONS's own slips stay in too, such as a typing error in the `{python} typing_error_month` fixed investment figures (`{python} typing_error_value`% for `{python} typing_error_quarter`).
+
+**Growth rates are the safer choice for testing models.** Because levels change units, the published growth rates are the more consistent form through time. [Which series to use](#which-series-to-use) lists a recommended series for each main indicator.
+
+## An example: UK GDP and its revisions
+
+::: {#fig-gdp}
+
+```{python}
+#| fig-alt: "A line chart with one thin line per publication date, each showing UK GDP as an index. Lines spread apart as they move right, showing that the path of GDP was revised. Early vintages are violet and recent ones bright cyan, with the latest in white. Vintages differ most around 2008, and all recent ones show the sharp fall in 2020."
+
+GDP_SERIES = "ABMI"
+GDP_FIGURE_SIZE = (8.6, 4.8)
+VINTAGE_LINE_WIDTH = 0.45
+VINTAGE_LINE_ALPHA = 0.55
+LATEST_LINE_WIDTH = 1.8
+OLD_VINTAGE_COLOUR = "#7A3DA8"
+COLOURBAR_SHRINK = 0.6
+COLOURBAR_PAD = 0.02
+LABEL_NUDGE_YEARS = 0.25
+
+quarterly_gdp = archive.loc[(archive["series_id"] == GDP_SERIES) & (archive["frequency"] == "Q")]
+gdp_triangle = revision_triangle(quarterly_gdp, GDP_SERIES).dropna(subset=[BASE_PERIOD])
+gdp_triangle = gdp_triangle[sorted(column for column in gdp_triangle.columns if column >= BASE_PERIOD)]
+gdp_index = gdp_triangle.div(gdp_triangle[BASE_PERIOD], axis=0) * PERCENT
+quarter_positions = np.array([period.year + (period.quarter - 1) / 4 for period in gdp_index.columns])
+vintage_numbers = gdp_index.index.year + (gdp_index.index.dayofyear - 1) / 366
+
+vintage_colours = LinearSegmentedColormap.from_list("vintages", [OLD_VINTAGE_COLOUR, theme.SCAN_LINE_CYAN])
+vintage_norm = plt.Normalize(vintage_numbers.min(), vintage_numbers.max())
+
+figure, axes = plt.subplots(figsize=GDP_FIGURE_SIZE)
+for number, (_, vintage) in zip(vintage_numbers[:-1], gdp_index.iloc[:-1].iterrows()):
+    axes.plot(
+        quarter_positions,
+        vintage.to_numpy(dtype=float),
+        color=vintage_colours(vintage_norm(number)),
+        linewidth=VINTAGE_LINE_WIDTH,
+        alpha=VINTAGE_LINE_ALPHA,
+    )
+latest_vintage = gdp_index.iloc[-1].to_numpy(dtype=float)
+axes.plot(quarter_positions, latest_vintage, color=theme.ELECTRON_WHITE, linewidth=LATEST_LINE_WIDTH)
+last_point = np.nanmax(np.where(~np.isnan(latest_vintage)))
+axes.annotate(
+    f"Latest\n{gdp_index.index[-1]:%b %Y}",
+    (quarter_positions[last_point], latest_vintage[last_point]),
+    xytext=(quarter_positions[last_point] + LABEL_NUDGE_YEARS, latest_vintage[last_point]),
+    va="center",
+    color=theme.ELECTRON_WHITE,
+)
+axes.set_xlim(BASE_PERIOD.year, quarter_positions[last_point] + 3)
+axes.set_ylabel(f"GDP, {base_quarter} = {PERCENT}")
+axes.grid(axis="x", visible=False)
+theme.add_chart_tag(axes, f"{GDP_SERIES} · {len(gdp_index)} vintages")
+colour_scale = figure.colorbar(
+    plt.cm.ScalarMappable(norm=vintage_norm, cmap=vintage_colours),
+    ax=axes,
+    shrink=COLOURBAR_SHRINK,
+    pad=COLOURBAR_PAD,
+)
+colour_scale.set_label("Year published")
+colour_scale.outline.set_visible(False)
+plt.show()
+
+gdp_growth = archive.loc[archive["series_id"] == "IHYQ"].sort_values("vintage_date")
+
+
+def growth_history(period: str) -> pd.Series:
+    """Gives every published estimate of GDP growth for one quarter.
+
+    Args:
+        period: The quarter, for example "2008Q4".
+
+    Returns:
+        The estimates, indexed by vintage date.
+    """
+    rows = gdp_growth.loc[gdp_growth["reference_period"] == pd.Period(period, "Q")]
+    return rows.set_index("vintage_date")["value"]
+
+
+CRISIS_QUARTER = pd.Period("2008Q4", "Q")
+PANDEMIC_QUARTER = pd.Period("2020Q2", "Q")
+crisis = growth_history(str(CRISIS_QUARTER))
+pandemic = growth_history(str(PANDEMIC_QUARTER))
+crisis_quarter_text = theme.quarter_in_words(CRISIS_QUARTER)
+pandemic_quarter_text = theme.quarter_in_words(PANDEMIC_QUARTER)
+crisis_first, crisis_latest = signed(crisis.iloc[0]), signed(crisis.iloc[-1])
+crisis_first_date, crisis_change_count = f"{crisis.index[0]:%B %Y}", f"{len(crisis) - 1}"
+pandemic_first, pandemic_latest = signed(pandemic.iloc[0]), signed(pandemic.iloc[-1])
+pandemic_first_date, pandemic_change_count = f"{pandemic.index[0]:%-d %B %Y}", f"{len(pandemic) - 1}"
+index_base = f"{PERCENT}"
+```
+
+UK GDP as published at each date since `{python} base_year`. Each line is one vintage: the whole history of GDP as ONS showed it on one publication date. To remove changes of units, each vintage is set to `{python} index_base` in `{python} base_quarter`. Older vintages are darker. Vintages from before `{python} base_year` are left out because they do not reach the starting point.
+
+:::
+
+The lines start together at `{python} index_base` and spread apart as ONS gathers fuller information and improves its methods. The spread is the reason for keeping every vintage: someone looking at GDP years ago saw a different past from someone looking today.
+
+Single quarters show the same thing. ONS first estimated growth in the `{python} crisis_quarter_text` at `{python} crisis_first`% in `{python} crisis_first_date`. The archive holds `{python} crisis_change_count` changes to that figure since then, and it now stands at `{python} crisis_latest`%. Growth in the `{python} pandemic_quarter_text` was first put at `{python} pandemic_first`% on `{python} pandemic_first_date`, has changed `{python} pandemic_change_count` times, and now stands at `{python} pandemic_latest`%.
+
+This chart uses the levels series, indexed within each vintage, because levels show how the whole path shifted. For most modelling work, use the growth rate instead.
+
+## Is it likely to be right?
+
+There are two ways the archive could be wrong. It could hold the wrong number, or it could hold the right number against the wrong date. No single test rules out both, so there are several checks. They show that the archive matches what was published. They say nothing about whether ONS's estimates were themselves accurate.
+
+### Comparison with an independent archive
+
+The OECD has kept its own record of UK statistics, one edition a month since `{python} oecd_first_edition`. It was assembled separately, so agreement would be hard to get by accident. Each comparison takes the most recent periods in each OECD edition, works out growth rates and checks them against the archive around the same date. That covers `{python} oecd_value_count` comparisons on `{python} oecd_series_count` of the archive's `{python} series_count` series, across up to `{python} oecd_edition_count` editions. These results were last worked out on `{python} OUTSIDE_CHECKS_DATE`.
+
+```{python}
+#| label: fig-oecd-gdp
+#| fig-cap: "Each dot compares one GDP growth figure in an OECD edition with the archive's figure on the day before that edition's month began. Dots inside the band agree to within rounding. A few fall outside because the OECD collected a release at a different time from the one this strict test assumes."
+#| fig-alt: "A scatter chart of differences between the archive and the OECD for quarterly GDP growth, by OECD edition from 1999 to 2026. Nearly all dots sit on or close to zero and inside a narrow band of plus or minus 0.05 percentage points, with only a few outliers."
+
+ROUNDING_BAND = round(ROUNDING_TOLERANCE, 2)
+OECD_FIGURE_SIZE = (8.6, 3.2)
+DOT_SIZE = 7
+ONE_DAY = pd.Timedelta(days=1)
+EDITION_MARGIN = pd.Timedelta(days=180)
+
+oecd_growth = pd.read_csv(OECD_GDP_GROWTH_PATH, parse_dates=["edition"])
+oecd_growth["period"] = pd.PeriodIndex(oecd_growth["period"], freq="Q-DEC")
+
+archive_levels = revision_triangle(
+    archive.loc[archive["frequency"] == "Q"], GDP_BENCHMARK_SERIES
+)
+archive_levels.columns = pd.PeriodIndex(list(archive_levels.columns), freq="Q-DEC")
+archive_levels = archive_levels.reindex(
+    columns=pd.period_range(archive_levels.columns.min(), archive_levels.columns.max(), freq="Q-DEC")
+)
+archive_growth = (archive_levels / archive_levels.shift(1, axis=1) - 1) * PERCENT
+
+
+def edition_differences(edition: pd.Timestamp, published: pd.Series) -> list[dict[str, object]]:
+    """Compares the most recent periods in one OECD edition with the archive.
+
+    Args:
+        edition: The first day of the edition's month.
+        published: The edition's growth rate for each recent period.
+
+    Returns:
+        One record per period compared, holding the difference.
+    """
+    known = archive_growth.loc[: edition - ONE_DAY]
+    if known.empty:
+        return []
+    gaps = (known.iloc[-1].reindex(published.index) - published).dropna()
+    return [{"edition": edition, "difference": gap} for gap in gaps]
+
+
+differences = pd.DataFrame(
+    [
+        record
+        for edition, rows in oecd_growth.groupby("edition")
+        for record in edition_differences(edition, rows.set_index("period")["growth"])
+    ]
+)
+in_band_share = (differences["difference"].abs() <= ROUNDING_BAND + 1e-9).mean()
+
+figure, axes = plt.subplots(figsize=OECD_FIGURE_SIZE)
+axes.axhspan(-ROUNDING_BAND, ROUNDING_BAND, color=theme.CORRUPTED_VIOLET, alpha=0.7, linewidth=0)
+axes.scatter(
+    differences["edition"],
+    differences["difference"],
+    s=DOT_SIZE,
+    color=theme.SCAN_LINE_CYAN,
+    linewidths=0,
+)
+axes.set_xlim(differences["edition"].min() - EDITION_MARGIN, differences["edition"].max() + EDITION_MARGIN)
+axes.set_ylabel("Archive minus OECD\n(percentage points)")
+axes.set_xlabel("OECD edition")
+axes.grid(axis="x", visible=False)
+theme.add_chart_tag(axes, f"GDP growth · {share_text(in_band_share, 1)} inside the rounding band")
+plt.show()
+```
+
+::: {#fig-oecd-all}
+
+```{python}
+#| fig-alt: "A dot plot with one row per comparison and three markers each. With the looser tolerance, every comparison sits close to complete agreement. With the tight tolerance, most sit a little lower, while gross fixed capital formation, the GDP deflator, CPI, CPIH and the production growth triangle sit noticeably lower."
+
+TEST_MARKERS = {
+    "strict_within_0.05": (f"Strict date, within {TIGHT_POINTS} points", theme.DEGAUSS_MAGENTA, "s"),
+    "nearby_within_0.05": (f"Nearby date, within {TIGHT_POINTS} points", theme.PHOSPHOR_AMBER, "D"),
+    "nearby_within_0.15": (f"Nearby date, within {LOOSE_POINTS} points", theme.SCAN_LINE_CYAN, "o"),
+}
+BENCHMARK_FIGURE_SIZE = (8.6, 4.6)
+MARKER_SIZE = 42
+LOWEST_SHARE_SHOWN = 0.6
+HIGHEST_SHARE_SHOWN = 1.015
+BENCHMARK_LEGEND_TOP = 1.14
+
+row_numbers = range(len(benchmark))
+figure, axes = plt.subplots(figsize=BENCHMARK_FIGURE_SIZE)
+for row_number in row_numbers:
+    axes.axhline(row_number, color=theme.GRID_LINE, linewidth=theme.HAIRLINE_WIDTH, zorder=0)
+for column, (label, colour, marker) in TEST_MARKERS.items():
+    axes.scatter(
+        benchmark[column],
+        row_numbers,
+        s=MARKER_SIZE,
+        marker=marker,
+        color=colour,
+        edgecolors=theme.STATIC_GREY,
+        linewidths=1,
+        label=label,
+        zorder=3,
+    )
+axes.set_yticks(row_numbers, benchmark["benchmark"])
+axes.invert_yaxis()
+axes.set_xlim(LOWEST_SHARE_SHOWN, HIGHEST_SHARE_SHOWN)
+axes.xaxis.set_major_formatter(PercentFormatter(xmax=1, decimals=0))
+axes.set_xlabel(f"Share of figures agreeing with the OECD (axis starts at {LOWEST_SHARE_SHOWN:.0%})")
+axes.grid(axis="y", visible=False)
+axes.tick_params(axis="y", length=0)
+axes.legend(ncol=3, loc="upper right", bbox_to_anchor=(1, BENCHMARK_LEGEND_TOP), borderaxespad=0, columnspacing=1, handletextpad=0.2, labelcolor=theme.SECONDARY_TEXT)
+plt.show()
+```
+
+Agreement with the OECD for every comparison. The strict test uses the archive's figures from the day before the OECD edition's month. The nearby tests allow the closest vintage from `{python} window_days_before` days before to `{python} window_days_after` days after the start of that month, because the OECD may have collected figures a little earlier or later. Where a marker seems to be missing, it sits under another with the same result.
+
+:::
+
+Under the looser test, at least `{python} oecd_worst_loose` of figures agree in every comparison. The tighter tests fall short for two understood reasons. First, the OECD rebases ONS's one-decimal indices, so growth worked out from them can sit a little away from the rate ONS published, even for the same release. That accounts for much of the gap in production and in consumer prices. Second, the OECD may have collected a release at a different point from where the test looks.
+
+Unemployment and retail sales are not compared, because the OECD's UK series are different measures from the ONS ones held here. Most other series have no outside check of this kind.
+
+### Comparison with itself
+
+ONS publishes some series both as levels and as growth rates, and the archive often gets them by different routes. At each vintage, growth worked out from the levels should match the published growth rate. A mismatch would point to a misread or misdated file.
+
+```{python}
+#| output: asis
+
+table_rows = [
+    [
+        f"`{row['growth']}` and `{row['levels']}`",
+        f"{row['compared']:,}",
+        share_text(row["share_within_rounding"], 1),
+        share_text(row["share_within_0.15"], 1),
+        f"{row['largest_difference']:.2f} points: {row['largest_at']}",
+    ]
+    for _, row in agreement.iterrows()
+]
+display(
+    Markdown(
+        theme.markdown_table(
+            ["Growth and level series", "Figures compared", "Within rounding", f"Within {LOOSE_POINTS} points", "Largest gap"],
+            table_rows,
+        )
+    )
+)
+```
+
+One of the largest gaps is the `{python} typing_error_month` typing error mentioned above, which sits in the published growth rate. Of the `{python} growth_pair_count` largest gaps, `{python} gaps_before_2000` are in vintages from before `{python} gap_cutoff_year`. The early GDP gaps remain unexplained (see the limits below).
+
+### Checks on dating
+
+- **Figures published before their period ended.** A figure dated on or before the end of the period it describes would suggest a wrong date. `{python} look_ahead_rows` of `{python} row_count` rows (`{python} look_ahead_share`) meet this test. `{python} look_ahead_workforce_jobs` are annual workforce jobs figures that appear before their year is over, published that way on ONS's page, so they do not look like dating errors. Surveys are left out of this test, because they can properly report on a month before it ends. The other `{python} other_look_ahead_rows` are production and manufacturing figures (for example, `{python} other_look_ahead_example`), which have not been looked into further.
+- **First figures that arrive late.** If a period appeared in the archive later than in one of the sources collected, a source would have been wrongly set aside. There were none when this was last checked, on `{python} OUTSIDE_CHECKS_DATE`.
+- **Mixed definitions.** A monthly series should not mix single months with rolling three-month windows. `{python} mixed_basis_count` series do.
+
+### Traceable values
+
+The archive is put together by a program from stored copies of the published files, with no figures entered or changed by hand. Each row names the file it came from, so you can trace or challenge a value by going back to that file.
+
+## Known limits
+
+- **Short histories.** Earnings growth, vacancies, public sector net borrowing, CPIH, core and services CPI, and the levels of employment and unemployment are held only from about `{python} exact_dating_start`. Nothing earlier has been found for them.
+- **GDP vintages from `{python} early_first_year` to `{python} early_last_year`.** Published growth rates in the `IHYQ` table often differ from growth worked out from GDP levels at the same date. Only `{python} early_tight_share` agree to within rounding and `{python} early_loose_share` to within `{python} LOOSE_POINTS` points, with gaps of up to `{python} early_largest_gap` points. This is not yet explained, so treat that stretch with caution.
+- **Missing releases.** Some releases are in no source collected. For example, the labour market levels have no vintages between `{python} labour_gap_start` and `{python} labour_gap_end`. Check a series for gaps like this before relying on it.
+- **Business surveys.** Survey results come from samples of firms and are not comparable with official figures or with each other. Their histories are also short in real time: BICS results start in December 2021 and mostly May 2022, Credit Conditions Survey spreadsheets in January 2016, and Decision Maker Panel headline worksheets in late 2021 or 2022. Earlier survey periods first appear late, often as `history`.
+- **BICS release dates.** 20 of the 160 ONS editions carry the previous wave's release date. These use the next release instead, so they can be about two weeks late.
+- **Agents' scores.** Past versions of the file cannot be seen, so dates are estimates that can be up to about three months late, and any later correction by the Bank would be hidden.
+- **Sources not yet used.** ONS pages saved by the National Archives and the ONS API could fill in more of the years before `{python} exact_dating_start`.
+
+## Which series to use
+
+Several indicators are held in more than one form. If you are testing a model on the data available at each date, choose the form that stays the same throughout your sample. In practice, that usually means the published growth rate.
+
+```{python}
+#| output: asis
+
+RECOMMENDED_SERIES = {
+    "IHYQ": ("GDP, quarter on quarter", ""),
+    "ECYX": ("GDP, month on month", f"Monthly GDP was first published in {monthly_gdp_month}"),
+    "YBHA_QOQ": ("Nominal GDP, quarter on quarter", ""),
+    "YBGB_YOY": ("GDP deflator, on a year ago", ""),
+    "ABJR_QOQ": ("Household consumption", ""),
+    "NMRY_QOQ": ("Government consumption", ""),
+    "NPQT_QOQ": ("Gross fixed capital formation", f"The {typing_error_month} vintage holds an ONS typing error"),
+    "KG7P": ("Business investment", ""),
+    "IKBK_QOQ": ("Exports (volume)", ""),
+    "IKBL_QOQ": ("Imports (volume)", ""),
+    "IOP_MOM": ("Production, month on month", ""),
+    "IOM_MOM": ("Manufacturing, month on month", ""),
+    "IOS_MOM": ("Services, month on month", ""),
+    "CON_MOM": ("Construction, month on month", ""),
+    "RSI_MOM": ("Retail sales volume, month on month", "Not checked against the OECD"),
+    "D7G7": ("CPI inflation", "Never revised, so earlier values are first publications"),
+    "CHAW": ("RPI", "Never revised"),
+    "MGSX": ("Unemployment rate", "Rolling three-month figures"),
+    "LF24": ("Employment rate", "Rolling three-month figures"),
+    "BCJD": ("Claimant count", ""),
+    "NRJS": ("Household saving ratio", ""),
+}
+first_vintages = archive.groupby("series_id", observed=True)["vintage_date"].min()
+display(
+    Markdown(
+        theme.markdown_table(
+            ["Indicator", "Series", "Publications from", "Notes"],
+            [
+                [indicator, f"`{series_id}`", f"{first_vintages[series_id].year}", note]
+                for series_id, (indicator, note) in RECOMMENDED_SERIES.items()
+            ],
+        )
+    )
+)
+```
+
+## What each column means
+
+```{python}
+#| output: asis
+
+COLUMN_MEANINGS = {
+    "series_id": "The publisher's code for the series, or a label of our own",
+    "dataset_id": "The dataset or survey the value came from, such as `QNA` or `DMP`",
+    "title, short_name, measure": "What the series is and its units",
+    "frequency": "`A` annual, `Q` quarterly, `M` monthly or `D` daily, for survey waves",
+    "reference_period": "The period the value describes",
+    "reference_period_basis": "`period`, `3m_ending` for rolling three-month figures, or `survey`",
+    "vintage_date": "When the value was published",
+    "vintage_date_precision": "`day`, `month` or `upper_bound`",
+    "release_type": "`first`, `revision` or `history`",
+    "value": "The published value",
+    "source": "The publisher: `ONS` or `Bank of England`",
+    "route, source_url": "The route and the exact file or web address",
+    "retrieved_at, content_sha256": "When the file was downloaded, and its fingerprint",
+}
+display(
+    Markdown(
+        theme.markdown_table(
+            ["Column", "Meaning"],
+            [[f"`{column.replace(', ', '`, `')}`", meaning] for column, meaning in COLUMN_MEANINGS.items()],
+        )
+    )
+)
+```

@@ -1,0 +1,39 @@
+project:
+  type: website
+  output-dir: _site
+  post-render: _publish_archive.py
+  resources:
+    - assets/fonts/*
+    - assets/noise.svg
+    - assets/favicon.png
+
+website:
+  title: "UK REAL-TIME DATA"
+  favicon: assets/favicon.svg
+  page-footer:
+    left: "Sources: Office for National Statistics and Bank of England."
+  navbar:
+    left:
+      - text: Guide to the data
+        href: guide.qmd
+      - text: Accessing the data
+        href: accessing_the_data.qmd
+      - text: Data issues
+        href: data_issues.qmd
+
+execute:
+  echo: false
+  warning: false
+
+format:
+  html:
+    theme: assets/glitch.scss
+    css: assets/base.css
+    include-in-header:
+      text: <link rel="alternate icon" type="image/png" sizes="64x64" href="assets/favicon.png">
+    include-after-body: assets/code_highlight.html
+    syntax-highlighting: assets/glitch.theme
+    fig-format: svg
+    toc: true
+    toc-title: On this page
+    smooth-scroll: true

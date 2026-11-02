@@ -1,0 +1,21 @@
+{
+  "text-color": "#F1F5F9",
+  "background-color": "#14161B",
+  "line-number-color": "#64748B",
+  "line-number-background-color": null,
+  "text-styles": {
+    "Keyword": {"text-color": "#FF2A85", "bold": false},
+    "ControlFlow": {"text-color": "#FF2A85", "bold": false},
+    "Import": {"text-color": "#FF2A85", "bold": false},
+    "Function": {"text-color": "#00F5D4"},
+    "BuiltIn": {"text-color": "#00F5D4"},
+    "String": {"text-color": "#FFB703"},
+    "SpecialString": {"text-color": "#FFB703"},
+    "VerbatimString": {"text-color": "#FFB703"},
+    "DecVal": {"text-color": "#FFB703"},
+    "Float": {"text-color": "#FFB703"},
+    "Comment": {"text-color": "#94A3B8", "italic": false},
+    "Operator": {"text-color": "#00F5D4"},
+    "Variable": {"text-color": "#F1F5F9"}
+  }
+}

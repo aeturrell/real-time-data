@@ -1,0 +1,685 @@
+---
+title: "Accessing the data"
+subtitle: "Downloading in bulk or running queries"
+jupyter: python3
+execute:
+  echo: true
+---
+
+```{python}
+#| echo: false
+import matplotlib.pyplot as plt
+import pandas as pd
+from IPython.display import Markdown
+from loguru import logger
+from matplotlib.dates import DateFormatter, MonthLocator
+
+import _chart_theme as theme
+from realtime.settings import ARCHIVE_PATH
+
+logger.disable("realtime")
+theme.apply_chart_theme()
+
+BYTES_PER_MEGABYTE = 1_000_000
+file_size = f"{ARCHIVE_PATH.stat().st_size / BYTES_PER_MEGABYTE:.1f}"
+
+
+def show_table(table: pd.DataFrame, decimals: int = 1) -> Markdown:
+    """Shows a table of results in the page's own table style.
+
+    Args:
+        table: The table to show.
+        decimals: The decimal places for numbers that are not whole.
+
+    Returns:
+        The table, ready to display.
+    """
+    rows = [
+        [f"{value:.{decimals}f}" if isinstance(value, float) else str(value) for value in row]
+        for row in table.itertuples(index=False)
+    ]
+    return Markdown(theme.markdown_table(list(table.columns), rows))
+```
+
+::: {.lead-text}
+The whole archive is one `{python} file_size` MB parquet file. You can download it, or point a query tool at its web address and read it from there. Either way you need no account and no key.
+:::
+
+The file is published with this website, and the site's charts and figures are built from it. So when the site updates, the file updates too. The address stays the same, so anything you write against it picks up new data by itself. After an update, your browser or our web host may keep showing the old copy for up to 10 minutes.
+
+## Query it without downloading
+
+[DuckDB](https://duckdb.org/) is a free database that runs on your own computer and can read a parquet file from a web address. This query asks for every value published for the UK's GDP growth in the second quarter of 2020:
+
+```sql
+SELECT vintage_date::DATE AS published, value
+FROM 'https://aeturrell.github.io/real-time-data/realtimedata.parquet'
+WHERE series_id = 'IHYQ' AND reference_period = '2020Q2'
+ORDER BY vintage_date
+```
+
+And this one lists every series, with its name and the dates of its first and latest publications:
+
+```sql
+SELECT
+    series_id,
+    any_value(title) AS title,
+    min(vintage_date)::DATE AS first_published,
+    max(vintage_date)::DATE AS latest_published
+FROM 'https://aeturrell.github.io/real-time-data/realtimedata.parquet'
+GROUP BY series_id
+ORDER BY series_id
+```
+
+To run a query from the command line, [install DuckDB](https://duckdb.org/install/) and pass it the query in quotes:
+
+```bash
+duckdb -c "
+  SELECT vintage_date::DATE AS published, value
+  FROM 'https://aeturrell.github.io/real-time-data/realtimedata.parquet'
+  WHERE series_id = 'IHYQ' AND reference_period = '2020Q2'
+  ORDER BY vintage_date"
+```
+
+You can also paste either query into [DuckDB's browser shell](https://shell.duckdb.org/) without installing anything. It works because the file's host sets CORS (cross-origin resource sharing), a permission that lets web pages on other sites read the file.
+
+## Bulk download the file
+
+```bash
+curl -O https://aeturrell.github.io/real-time-data/realtimedata.parquet
+```
+
+There are no extra steps: each row is one published value, and the [guide to the data](guide.qmd) explains what the archive holds and how far to rely on it.
+
+## Explore the data
+
+DuckDB also comes with a notebook-style interface, which is an easy way to browse the archive. It needs DuckDB 1.2.1 or later. Start it with:
+
+```bash
+duckdb -ui
+```
+
+This opens the interface in your browser, installing the extension it needs the first time. In a notebook cell, make a view (a saved query you can treat as a table) of the file:
+
+```sql
+CREATE VIEW realtime AS
+SELECT * FROM 'https://aeturrell.github.io/real-time-data/realtimedata.parquet'
+```
+
+Click `realtime` in the list on the left to see each column's type and a summary of its values, then write queries against it in further cells. The [DuckDB UI documentation](https://duckdb.org/docs/stable/core_extensions/ui) covers the options, and [the announcement](https://duckdb.org/2025/03/12/duckdb-ui) gives a tour of its features.
+
+## Use it from Python
+
+The rest of this page works from Python using [Ibis](https://ibis-project.org/), which writes the queries for DuckDB. Queries are ordinary Python code, so they get syntax highlighting and your editor can check them. Every example can be copied and run as it is. You need only `uv add 'ibis-framework[duckdb]' pandas`, plus this setting:
+
+```{python}
+#| eval: false
+import ibis
+import pandas as pd
+from ibis import _
+
+archive = ibis.read_parquet("https://aeturrell.github.io/real-time-data/realtimedata.parquet")
+```
+
+```{python}
+#| echo: false
+import ibis
+from ibis import _
+
+archive = ibis.read_parquet(ARCHIVE_PATH)
+```
+
+In these examples, `_` stands for the table at that step of the query, so `_.value` means its `value` column.
+
+## See the numbers as they stood on a past date
+
+This is what makes a real-time archive different from an ordinary download. Each row gives the date a value was published, so to rebuild any past moment, take the newest row for each period up to that date.
+
+Here is the 2008 recession, as it looked at the end of January 2009 and as it looks now:
+
+```{python}
+KNOWN_ON = "2009-01-31"
+
+known_then = _.vintage_date <= ibis.timestamp(KNOWN_ON)
+
+recession = (
+    archive.filter(
+        _.series_id == "IHYQ",
+        _.frequency == "Q",
+        _.reference_period.between("2008Q1", "2008Q4"),
+    )
+    .group_by(quarter=_.reference_period)
+    .agg(
+        growth_then=_.value.argmax(_.vintage_date, where=known_then),
+        growth_now=_.value.argmax(_.vintage_date),
+    )
+    .order_by("quarter")
+    .to_pandas()
+)
+```
+
+```{python}
+#| echo: false
+then_total = recession["growth_then"].sum()
+now_total = recession["growth_now"].sum()
+show_table(
+    recession.rename(
+        columns={
+            "quarter": "Quarter",
+            "growth_then": "Growth known in January 2009 (%)",
+            "growth_now": "Growth known now (%)",
+        }
+    )
+)
+```
+
+Adding up the four quarters gives a rough sense of the difference: `{python} f"{then_total:.1f}"` percentage points as seen at the time, and `{python} f"{now_total:.1f}"` now. Anyone judging policy decisions from that winter should use the first column, because that is what people had in front of them.
+
+## Follow a revision: unemployment
+
+Unemployment rates are revised less than GDP growth, but they do change, sometimes in ways that alter the story. In October 2023 ONS stopped publishing its usual Labour Force Survey estimates, because too few people were responding. They returned in February 2024, reweighted to new population figures, and were reweighted again in December 2024.
+
+This query collects each value of the unemployment rate (`MGSX`) with its publication date. The rates are rolling three-month figures, stored against the month each window ends.
+
+```{python}
+UNEMPLOYMENT_FROM = "2021-01"
+UNEMPLOYMENT_TO = "2024-06"
+
+unemployment = (
+    archive.filter(
+        _.series_id == "MGSX",
+        _.frequency == "M",
+        _.reference_period.between(UNEMPLOYMENT_FROM, UNEMPLOYMENT_TO),
+    )
+    .select(month=_.reference_period, vintage_date=_.vintage_date, value=_.value)
+    .order_by("vintage_date")
+    .to_pandas()
+)
+
+
+def unemployment_known_on(date: str) -> pd.Series:
+    """Rebuilds the unemployment rate as it stood on a given date.
+
+    Args:
+        date: The date of interest.
+
+    Returns:
+        The latest rate known that day, for each month.
+    """
+    known = unemployment.loc[unemployment["vintage_date"] <= date]
+    return known.groupby("month")["value"].last().sort_index()
+
+
+before_pause = unemployment_known_on("2023-09-12")
+after_return = unemployment_known_on("2024-02-13")
+latest = unemployment.groupby("month")["value"].last().sort_index()
+first_estimates = unemployment.groupby("month")["value"].first().sort_index()
+```
+
+```{python}
+#| echo: false
+#| label: fig-unemployment
+#| fig-cap: "The UK unemployment rate, as published on different dates. Each line uses only what ONS had published by then. The first estimate of each month's rate is shown as dots."
+#| fig-alt: "A line chart of the UK unemployment rate from January 2021 to June 2024. Three lines show the rate as published in September 2023, February 2024 and the latest release, with dots for first estimates, each labelled beside its line or dots. The lines fall from about 5 percent in early 2021 to under 4 percent in 2022, then rise. The February 2024 line sits above the other two during 2021 and 2022. The dots stay near the lines but do not always match them."
+UNEMPLOYMENT_FIGURE_SIZE = (8.6, 4.4)
+LINE_WIDTH = 1.7
+FIRST_ESTIMATE_DOT_SIZE = 14
+TICK_EVERY_MONTHS = 6
+UNEMPLOYMENT_LABEL_SIZE = 8
+
+month_labels = list(latest.index)
+month_positions = {month: position for position, month in enumerate(month_labels)}
+
+
+unemployment_lines = [
+    (before_pause, theme.PHOSPHOR_AMBER),
+    (after_return, theme.DEGAUSS_MAGENTA),
+    (latest, theme.SCAN_LINE_CYAN),
+]
+UNEMPLOYMENT_LABELS = [
+    ("2022-10", 3.52, "Published September 2023", theme.PHOSPHOR_AMBER),
+    ("2021-06", 5.08, "Published February 2024", theme.DEGAUSS_MAGENTA),
+    ("2024-01", 4.5, "Latest", theme.SCAN_LINE_CYAN),
+    ("2021-01", 4.55, "First estimates", theme.ELECTRON_WHITE),
+]
+
+figure, axes = plt.subplots(figsize=UNEMPLOYMENT_FIGURE_SIZE, layout="constrained")
+for values, colour in unemployment_lines:
+    positions = [month_positions[month] for month in values.index]
+    axes.plot(positions, values.to_numpy(), color=colour, linewidth=LINE_WIDTH)
+axes.scatter(
+    [month_positions[month] for month in first_estimates.index],
+    first_estimates.to_numpy(),
+    s=FIRST_ESTIMATE_DOT_SIZE,
+    color=theme.ELECTRON_WHITE,
+    zorder=3,
+)
+for month, height, label, colour in UNEMPLOYMENT_LABELS:
+    axes.text(month_positions[month], height, label, color=colour, fontsize=UNEMPLOYMENT_LABEL_SIZE, va="center", clip_on=False)
+tick_positions = range(0, len(month_labels), TICK_EVERY_MONTHS)
+axes.set_xticks(list(tick_positions), [month_labels[position] for position in tick_positions])
+axes.set_ylabel("Unemployment rate (%)")
+theme.add_chart_tag(axes, "Unemployment rate, by publication date")
+plt.show()
+```
+
+```{python}
+#| echo: false
+pause_comparison = pd.DataFrame({"before": before_pause, "after": after_return}).dropna()
+largest_change_month = (pause_comparison["after"] - pause_comparison["before"]).abs().idxmax()
+largest_change_before = pause_comparison.loc[largest_change_month, "before"]
+largest_change_after = pause_comparison.loc[largest_change_month, "after"]
+```
+
+The February 2024 figures raised some earlier rates. For `{python} largest_change_month`, for example, the rate went from `{python} f"{largest_change_before:.1f}"`% to `{python} f"{largest_change_after:.1f}"`%. The later reweighting took part of that back. An ordinary download shows only the latest line, so these changes would be invisible.
+
+## Compare how much series get revised
+
+Because all series share one format, a single query can compare them. This takes each period's first published value and its latest value, then measures the average gap. It leaves out `history` rows, because for those the archive does not hold the true first estimate. Recent periods have had less time to be revised, so these averages slightly understate the eventual gap.
+
+```{python}
+QUARTERLY_SERIES = ["IHYQ", "KG7P"]
+MONTHLY_SERIES = ["ECYX", "IOP_MOM", "RSI_MOM", "MGSX"]
+
+estimates = (
+    archive.filter(
+        (_.series_id.isin(QUARTERLY_SERIES) & (_.frequency == "Q"))
+        | (_.series_id.isin(MONTHLY_SERIES) & (_.frequency == "M"))
+    )
+    .group_by(["series_id", "reference_period"])
+    .agg(
+        title=_.title.arbitrary(),
+        first_estimate=_.value.argmin(_.vintage_date),
+        latest_estimate=_.value.argmax(_.vintage_date),
+        first_release_type=_.release_type.argmin(_.vintage_date),
+    )
+)
+
+revision_sizes = (
+    estimates.filter(_.first_release_type == "first")
+    .mutate(revision=(_.latest_estimate - _.first_estimate).abs())
+    .group_by("series_id")
+    .agg(
+        title=_.title.arbitrary(),
+        periods=_.count(),
+        average_revision=_.revision.mean(),
+        largest_revision=_.revision.max(),
+    )
+    .order_by(ibis.desc("average_revision"))
+    .to_pandas()
+)
+```
+
+```{python}
+#| echo: false
+show_table(
+    revision_sizes.rename(
+        columns={
+            "series_id": "Series",
+            "title": "Title",
+            "periods": "Periods",
+            "average_revision": "Average revision (points)",
+            "largest_revision": "Largest revision (points)",
+        }
+    ),
+    decimals=2,
+)
+```
+
+## Trace a value back to its source
+
+Every row records where the value came from, when it was fetched and a SHA-256 fingerprint of the original file. You can use the fingerprint to check that a copy of the file is the one used here.
+
+```{python}
+provenance = (
+    archive.filter(
+        _.series_id == "IHYQ",
+        _.reference_period == "2020Q2",
+        _.release_type == "first",
+    )
+    .select(
+        _.value,
+        published=_.vintage_date,
+        source_url=_.source_url,
+        retrieved=_.retrieved_at,
+        content_sha256=_.content_sha256,
+    )
+    .to_pandas()
+)
+```
+
+```{python}
+#| echo: false
+FINGERPRINT_CHARACTERS_SHOWN = 12
+source_row = provenance.iloc[0]
+source_link = source_row["source_url"].removesuffix("/data")
+fingerprint_start = source_row["content_sha256"][:FINGERPRINT_CHARACTERS_SHOWN]
+```
+
+The first estimate of `{python} f"{source_row['value']:.1f}"`% was published on `{python} f"{source_row['published']:%d %B %Y}"`. It came from [this page on the ONS website](`{python} source_link`){target="_blank" rel="noopener"}, and the fingerprint of the data behind it begins `{python} fingerprint_start`.
+
+## The nowcasting query
+
+A nowcast estimates GDP growth for a quarter before ONS has published it. To test one fairly, you need every input as it arrived. This query gets a minimal set of series in the shape most models want: one row for each value published, with the series, the period it describes, the date it was published and the value.
+
+The set is quarterly GDP growth, which is the thing being estimated, plus monthly GDP, production, services, retail sales, unemployment, CPI inflation and one business survey. All are growth rates, rates or scores, so their units do not shift between publications.
+
+```{python}
+NOWCASTING_SERIES = {
+    "IHYQ": "Quarterly GDP growth",
+    "ECYX": "Monthly GDP growth",
+    "IOP_MOM": "Production growth",
+    "IOS_MOM": "Services growth",
+    "RSI_MOM": "Retail sales growth",
+    "MGSX": "Unemployment rate",
+    "D7G7": "CPI inflation",
+    "AGENTS_CONSUMER_SERVICES_VALUES": "Agents' consumer services score",
+}
+
+quarterly_or_monthly = (_.series_id == "IHYQ").ifelse("Q", "M")
+
+nowcasting_data = (
+    archive.filter(
+        _.series_id.isin(list(NOWCASTING_SERIES)),
+        _.frequency == quarterly_or_monthly,
+    )
+    .select("vintage_date", "reference_period", "series_id", "value")
+    .order_by(["vintage_date", "series_id", "reference_period"])
+    .to_pandas()
+)
+
+nowcasting_data.head()
+```
+
+Those are the oldest rows, and `.tail()` gives the newest. To see what a model would have had on any date, keep the rows published by then and take the newest value for each series and period.
+
+Next, pick a quarter and follow the data arriving between the day it began and the day of its first GDP estimate:
+
+```{python}
+CHOSEN_QUARTER = pd.Period("2025Q3", "Q")
+
+first_gdp_estimate_date = nowcasting_data.loc[
+    (nowcasting_data["series_id"] == "IHYQ")
+    & (nowcasting_data["reference_period"] == str(CHOSEN_QUARTER)),
+    "vintage_date",
+].min()
+months_in_quarter = pd.period_range(CHOSEN_QUARTER.start_time, CHOSEN_QUARTER.end_time, freq="M")
+
+quarter_rows = nowcasting_data.loc[
+    nowcasting_data["vintage_date"].between(CHOSEN_QUARTER.start_time, first_gdp_estimate_date)
+].copy()
+quarter_rows["about_chosen_quarter"] = quarter_rows["reference_period"].isin(
+    [str(month) for month in months_in_quarter] + [str(CHOSEN_QUARTER)]
+)
+quarter_rows["chosen_quarter_period"] = quarter_rows["reference_period"].where(
+    quarter_rows["about_chosen_quarter"], other=""
+)
+
+releases = (
+    quarter_rows.groupby(["series_id", "vintage_date"])
+    .agg(
+        rows=("value", "size"),
+        about_chosen_quarter=("about_chosen_quarter", "any"),
+        newest_period=("chosen_quarter_period", "max"),
+    )
+    .reset_index()
+)
+```
+
+```{python}
+#| echo: false
+#| label: fig-nowcast-flow
+#| fig-cap: "Each dot is a day when new values were published for a series, from the start of the third quarter of 2025 up to its first GDP estimate. Bright dots carry a figure for the quarter itself, labelled with the month or quarter it describes. Grey dots carry only figures for other periods."
+#| fig-alt: "A timeline with one row per series and publication dates running from July to November 2025. In the early months most series have only grey dots, for other periods. Bright dots labelled July, August and September appear as the quarter goes on. CPI inflation and retail sales report before monthly output. A vertical line marks the first GDP estimate in mid-November, the same day as the monthly GDP figure for September."
+FLOW_FIGURE_SIZE = (8.6, 4.8)
+DOT_SIZE = 42
+LABEL_FONT_SIZE = 7
+LABEL_LIFT = 0.2
+
+series_rows = {series: row for row, series in enumerate(reversed(NOWCASTING_SERIES))}
+new_information = releases.loc[releases["about_chosen_quarter"]]
+older_information = releases.loc[~releases["about_chosen_quarter"]]
+
+
+def period_label(period: str) -> str:
+    """Shortens a period for a chart label, such as "2025-07" to "Jul".
+
+    Args:
+        period: The monthly or quarterly period.
+
+    Returns:
+        The label.
+    """
+    return f"Q{CHOSEN_QUARTER.quarter}" if "Q" in period else pd.Period(period, "M").strftime("%b")
+
+
+figure, axes = plt.subplots(figsize=FLOW_FIGURE_SIZE, layout="constrained")
+axes.scatter(
+    older_information["vintage_date"],
+    older_information["series_id"].map(series_rows),
+    s=DOT_SIZE,
+    color=theme.OXIDE_SLATE,
+    label="Other periods only",
+)
+axes.scatter(
+    new_information["vintage_date"],
+    new_information["series_id"].map(series_rows),
+    s=DOT_SIZE,
+    color=theme.SCAN_LINE_CYAN,
+    label="About the chosen quarter",
+    zorder=3,
+)
+for release in new_information.itertuples():
+    axes.annotate(
+        period_label(release.newest_period),
+        (release.vintage_date, series_rows[release.series_id] + LABEL_LIFT),
+        ha="center",
+        fontsize=LABEL_FONT_SIZE,
+        color=theme.ELECTRON_WHITE,
+    )
+axes.axvline(first_gdp_estimate_date, color=theme.DEGAUSS_MAGENTA, label="First GDP estimate")
+axes.set_yticks(list(series_rows.values()), [NOWCASTING_SERIES[series] for series in series_rows])
+axes.xaxis.set_major_locator(MonthLocator())
+axes.xaxis.set_major_formatter(DateFormatter("%b %Y"))
+figure.legend(ncols=3, loc="outside lower center")
+theme.add_chart_tag(axes, f"Data arriving for {CHOSEN_QUARTER}")
+plt.show()
+
+first_arrivals = (
+    new_information.groupby("series_id")["vintage_date"].min().sort_values()
+)
+days_before_gdp = (first_gdp_estimate_date - first_arrivals).dt.days
+earliest_series = first_arrivals.index[0]
+```
+
+The first GDP estimate came on `{python} f"{first_gdp_estimate_date:%d %B %Y}"`. The earliest signal about the quarter in this set was `{python} NOWCASTING_SERIES[earliest_series]`, `{python} f"{days_before_gdp.iloc[0]}"` days before that. A nowcast made partway through the quarter therefore has some series with figures for it and others that stop a month or two earlier. This uneven edge is what nowcasting models have to handle, and it is only visible with publication dates. Series can also skip a period: the archive holds no Agents' score for September 2025, and that score's dates are the latest it could have appeared, not exact days.
+
+## Do business surveys lead GDP?
+
+Surveys of firms, often called soft data, come out sooner than official GDP. But are they a useful early signal, and a signal of which GDP: the first estimate, or the figure after years of revision? Only an archive with publication dates can test this fairly, because it can restrict the survey data to what had really been published at each point.
+
+This example uses two Bank of England Agents' scores, for consumer goods and consumer services, because they measure activity and have been public since 2006. Each is put on a common scale by subtracting its mean (μ) and dividing by its standard deviation (σ): z = (x − μ) / σ. The index is the average of the two over the latest three months.
+
+For each quarter's GDP release, the code keeps only the rows published before that day, so nothing from the future leaks in.
+
+```{python}
+SURVEY_SERIES = ["AGENTS_CONSUMER_GOODS_VALUES", "AGENTS_CONSUMER_SERVICES_VALUES"]
+RECENT_MONTHS = 3
+
+survey_rows = (
+    archive.filter(_.series_id.isin(SURVEY_SERIES))
+    .select("series_id", "reference_period", "vintage_date", "value")
+    .to_pandas()
+)
+
+gdp = (
+    archive.filter(_.series_id == "IHYQ", _.frequency == "Q")
+    .group_by(quarter=_.reference_period)
+    .agg(
+        first_estimate=_.value.argmin(_.vintage_date),
+        latest_estimate=_.value.argmax(_.vintage_date),
+        first_published=_.vintage_date.min(),
+        first_release_type=_.release_type.argmin(_.vintage_date),
+    )
+    .filter(_.first_release_type == "first")
+    .drop("first_release_type")
+    .order_by("quarter")
+    .to_pandas()
+)
+gdp.index = pd.PeriodIndex(gdp.pop("quarter"), freq="Q")
+gdp = gdp.loc[gdp["first_published"] > survey_rows["vintage_date"].min()]
+
+
+def survey_index_before(date: pd.Timestamp) -> float:
+    """Builds the survey index from rows published before a given date.
+
+    Args:
+        date: The date of interest.
+
+    Returns:
+        The average standardised score over the latest months.
+    """
+    published = survey_rows.loc[survey_rows["vintage_date"] < date]
+    scores = published.pivot_table(index="reference_period", columns="series_id", values="value")
+    standardised = (scores - scores.mean()) / scores.std()
+    return standardised.tail(RECENT_MONTHS).mean(axis=None)
+
+
+gdp["survey_index"] = gdp["first_published"].map(survey_index_before)
+```
+
+So `survey_index` for a given quarter is what you could have worked out on the day before that quarter's first GDP estimate. Next, compare it with GDP growth in that quarter and the following ones. As a benchmark, the last column uses that day's first estimate of GDP instead of the survey index. The pandemic is left out, and so are quarters from 2024 onwards, because their latest estimates have had little time to be revised.
+
+```{python}
+PANDEMIC_QUARTERS = pd.period_range("2020Q1", "2021Q4", freq="Q")
+SETTLED_BEFORE = pd.Period("2024Q1", "Q")
+EARLIEST_QUARTER = gdp.index.min()
+RECENT_START = pd.Period("2016Q1", "Q")
+QUARTERS_AHEAD = range(4)
+
+
+def correlations_ahead(
+    quarters_ahead: int,
+    start: pd.Period = EARLIEST_QUARTER,
+    leave_out_pandemic: bool = True,
+) -> dict[str, float | int]:
+    """Measures how closely the survey index tracks GDP growth some quarters ahead.
+
+    Args:
+        quarters_ahead: How many quarters after the survey index to look.
+        start: The earliest quarter of the survey index to use.
+        leave_out_pandemic: Whether to drop pairs with either quarter in the pandemic.
+
+    Returns:
+        The correlations with the first and latest estimates, the benchmark
+        correlation and the number of quarters compared.
+    """
+    pairs = gdp.assign(
+        first_ahead=gdp["first_estimate"].shift(-quarters_ahead),
+        latest_ahead=gdp["latest_estimate"].shift(-quarters_ahead),
+    ).dropna()
+    target_quarters = pairs.index + quarters_ahead
+    keep = (target_quarters < SETTLED_BEFORE) & (pairs.index >= start)
+    if leave_out_pandemic:
+        keep = keep & ~pairs.index.isin(PANDEMIC_QUARTERS) & ~target_quarters.isin(PANDEMIC_QUARTERS)
+    kept = pairs.loc[keep]
+    return {
+        "quarters_ahead": quarters_ahead,
+        "with_first": kept["survey_index"].corr(kept["first_ahead"]),
+        "with_latest": kept["survey_index"].corr(kept["latest_ahead"]),
+        "gdp_alone": kept["first_estimate"].corr(kept["first_ahead"]),
+        "quarters_compared": len(kept),
+    }
+
+
+correlations = pd.DataFrame([correlations_ahead(quarters) for quarters in QUARTERS_AHEAD])
+```
+
+```{python}
+#| echo: false
+SAME_QUARTER_BENCHMARK = "n/a"
+table = correlations.astype({"gdp_alone": object})
+table.loc[table["quarters_ahead"] == 0, "gdp_alone"] = SAME_QUARTER_BENCHMARK
+show_table(
+    table[["quarters_ahead", "with_first", "with_latest", "gdp_alone", "quarters_compared"]].rename(
+        columns={
+            "quarters_ahead": "Quarters ahead",
+            "with_first": "Survey index and first estimate",
+            "with_latest": "Survey index and latest estimate",
+            "gdp_alone": "First GDP estimate alone",
+            "quarters_compared": "Quarters compared",
+        }
+    ),
+    decimals=2,
+)
+```
+
+```{python}
+#| echo: false
+#| label: fig-survey-lead
+#| fig-cap: "The survey index, known before the previous quarter's first GDP estimate, against the first and latest estimates of GDP growth for each quarter. All three are in standard deviations from their means. The sharpest moves, during the pandemic, run off the chart."
+#| fig-alt: "A line chart from 2006 with three lines in standard deviations: the survey index, first estimates of GDP growth and latest estimates of GDP growth. All three fall sharply in 2008 and 2009. The pandemic quarters are shaded and the lines run off the scale there. Each line is labelled at its right-hand end. In the other years the survey index moves more smoothly than GDP growth, and the two do not always move together."
+SURVEY_FIGURE_SIZE = (8.6, 4.8)
+Y_AXIS_MARGIN = 0.3
+LABEL_DAYS_AFTER_END = 60
+LABEL_MINIMUM_GAP = 0.75
+LABEL_FONT_SIZE = 8
+ONE_QUARTER = 1
+PANDEMIC_SHADE_ALPHA = 0.25
+
+quiet_quarters = gdp.loc[~gdp.index.isin(PANDEMIC_QUARTERS)]
+first_on_scale = (gdp["first_estimate"] - quiet_quarters["first_estimate"].mean()) / quiet_quarters["first_estimate"].std()
+latest_on_scale = (gdp["latest_estimate"] - quiet_quarters["latest_estimate"].mean()) / quiet_quarters["latest_estimate"].std()
+survey_a_quarter_on = gdp["survey_index"].copy()
+survey_a_quarter_on.index = survey_a_quarter_on.index + ONE_QUARTER
+
+figure, axes = plt.subplots(figsize=SURVEY_FIGURE_SIZE, layout="constrained")
+axes.axvspan(
+    PANDEMIC_QUARTERS[0].start_time,
+    PANDEMIC_QUARTERS[-1].end_time,
+    color=theme.OXIDE_SLATE,
+    alpha=PANDEMIC_SHADE_ALPHA,
+)
+survey_lines = [
+    (survey_a_quarter_on, theme.PHOSPHOR_AMBER, "Survey index,\nknown a quarter earlier"),
+    (first_on_scale, theme.SCAN_LINE_CYAN, "GDP growth:\nfirst estimate"),
+    (latest_on_scale, theme.DEGAUSS_MAGENTA, "GDP growth:\nlatest estimate"),
+]
+outside_pandemic = pd.concat(
+    [line.loc[~line.index.isin(PANDEMIC_QUARTERS)] for line, _colour, _label in survey_lines]
+)
+y_bottom = outside_pandemic.min() - Y_AXIS_MARGIN
+y_top = outside_pandemic.max() + Y_AXIS_MARGIN
+label_x = max(line.index.max() for line, _colour, _label in survey_lines).to_timestamp() + pd.Timedelta(days=LABEL_DAYS_AFTER_END)
+label_y = None
+for line, colour, label in sorted(survey_lines, key=lambda item: item[0].dropna().iloc[-1]):
+    axes.plot(line.index.to_timestamp(), line, color=colour)
+    end_value = line.dropna().iloc[-1]
+    label_y = end_value if label_y is None else max(end_value, label_y + LABEL_MINIMUM_GAP)
+    axes.text(label_x, label_y, label, color=colour, fontsize=LABEL_FONT_SIZE, va="center", clip_on=False)
+axes.text(
+    PANDEMIC_QUARTERS[0].start_time + (PANDEMIC_QUARTERS[-1].end_time - PANDEMIC_QUARTERS[0].start_time) / 2,
+    y_top,
+    "Pandemic",
+    color=theme.SECONDARY_TEXT,
+    fontsize=LABEL_FONT_SIZE,
+    ha="center",
+    va="bottom",
+)
+axes.set_ylim(y_bottom, y_top)
+axes.set_ylabel("Standard deviations from mean")
+theme.add_chart_tag(axes, "Survey index a quarter ahead of GDP")
+plt.show()
+
+one_ahead = correlations.loc[correlations["quarters_ahead"] == ONE_QUARTER].iloc[0]
+one_ahead_recent = correlations_ahead(ONE_QUARTER, start=RECENT_START)
+one_ahead_with_pandemic = correlations_ahead(ONE_QUARTER, leave_out_pandemic=False)
+```
+
+A correlation runs from −1 to 1, where 0 means no straight-line relationship. The survey index does give a modest early signal: one quarter ahead, its correlation with the first estimate is `{python} f"{one_ahead['with_first']:.2f}"`. But that is no better than the first GDP estimate alone, at `{python} f"{one_ahead['gdp_alone']:.2f}"`. The index only pulls clearly ahead three quarters out, where both correlations are weak. From two quarters ahead, it tracks the first estimate more closely than the latest one, which shows that the estimate you test against can change how good a signal looks.
+
+The signal has clear limits, so treat this as an illustration, not a finding to rely on:
+
+- **It comes mostly from one recession.** Using only survey readings from 2016 onwards, the one-quarter-ahead correlation with the first estimate is `{python} f"{one_ahead_recent['with_first']:.2f}"`, across `{python} one_ahead_recent['quarters_compared']` quarters.
+- **The pandemic removes it.** With those quarters included, the same correlation over the whole sample is `{python} f"{one_ahead_with_pandemic['with_first']:.2f}"`.
+- **Publication dates are cautious, not exact.** Agents' scores are dated at the latest they could have appeared, so some were really available earlier than shown.
