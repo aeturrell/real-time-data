@@ -334,7 +334,9 @@ def dependable_release(
         return released, PRECISION
     position = bisect_right(release_dates, window_end)
     if position == len(release_dates):
-        return window_end + pd.Timedelta(days=DAYS_AFTER_CLOSE_IF_NOTHING_FOLLOWS), UPPER_BOUND
+        return window_end + pd.Timedelta(
+            days=DAYS_AFTER_CLOSE_IF_NOTHING_FOLLOWS
+        ), UPPER_BOUND
     return release_dates[position], UPPER_BOUND
 
 
@@ -494,7 +496,9 @@ def _spreadsheet_file(
         ValueError: If it has no spreadsheet.
     """
     names = [item["file"] for item in document.get("downloads", [])]
-    spreadsheets = [name for name in names if name.lower().endswith(SPREADSHEET_EXTENSIONS)]
+    spreadsheets = [
+        name for name in names if name.lower().endswith(SPREADSHEET_EXTENSIONS)
+    ]
     if not spreadsheets:
         raise ValueError(f"no spreadsheet for {uri}")
     url = f"{ONS_BASE_URL}/file?uri={uri}/{spreadsheets[0]}"

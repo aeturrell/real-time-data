@@ -6,7 +6,7 @@ import sys
 import pandas as pd
 from loguru import logger
 
-from realtime.benchmark import benchmark_report
+from realtime.benchmark import benchmark_report, write_gdp_growth
 from realtime.build import SOURCE_TYPES, build_archive
 from realtime.cache import DownloadCache
 from realtime.config import load_config
@@ -17,6 +17,7 @@ from realtime.settings import (
     DIAGNOSTICS_PATH,
     LATE_FIRST_APPEARANCES_PATH,
     LOG_DIR,
+    OECD_GDP_GROWTH_PATH,
 )
 from realtime.store import read_archive, write_archive
 from realtime.validate import (
@@ -122,6 +123,8 @@ def run_benchmark(arguments: argparse.Namespace) -> None:
     report.to_csv(BENCHMARK_PATH, index=False)
     print(report.to_string(index=False))
     logger.info(f"Benchmark written to {BENCHMARK_PATH}")
+    write_gdp_growth(cache, OECD_GDP_GROWTH_PATH)
+    logger.info(f"OECD GDP growth written to {OECD_GDP_GROWTH_PATH}")
 
 
 def parse_arguments(argv: list[str] | None = None) -> argparse.Namespace:

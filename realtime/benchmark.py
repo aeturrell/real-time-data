@@ -28,6 +28,7 @@ headline retail sales volume index.
 
 import io
 from dataclasses import dataclass
+from pathlib import Path
 
 import pandas as pd
 from loguru import logger
@@ -46,6 +47,7 @@ OECD_START_YEAR = 1990
 PANDAS_FREQUENCY = {"M": "M", "Q": "Q-DEC"}
 PERCENT = 100
 RECENT_PERIODS = 12
+GDP_BENCHMARK_SERIES = "ABMI"
 DAYS_BEFORE_EDITION = 62
 DAYS_AFTER_EDITION = 31
 ONE_DAY = pd.Timedelta(days=1)
@@ -349,3 +351,36 @@ def _check_is_oecd_csv(content: bytes) -> None:
     """
     if not content.startswith(OECD_CSV_HEADER):
         raise ValueError("not an OECD SDMX CSV file")
+
+
+def recent_growth(levels: pd.DataFrame, lag: int) -> pd.DataFrame:
+    """Works out each edition's growth rates for its most recent periods.
+
+    Args:
+        levels: The OECD figures from oecd_editions.
+        lag: How many periods back growth is measured against.
+
+    Returns:
+        One row per edition and period, with the growth rate.
+    """
+    growth = _growth(levels, lag)
+    rows = [
+        {"edition": edition, "period": str(period), "growth": value}
+        for edition, published in growth.iterrows()
+        for period, value in published.dropna().tail(RECENT_PERIODS).items()
+    ]
+    return pd.DataFrame(rows)
+
+
+def write_gdp_growth(cache: DownloadCache, path: Path) -> None:
+    """Saves the recent OECD GDP growth rates that the website's check compares with.
+
+    Args:
+        cache: The download cache.
+        path: Where to write the table.
+    """
+    benchmark = next(
+        item for item in BENCHMARKS if item.series_id == GDP_BENCHMARK_SERIES
+    )
+    levels = oecd_editions(cache, benchmark)
+    recent_growth(levels, benchmark.lag).to_csv(path, index=False)

@@ -104,5 +104,3 @@ def markdown_table(headers: list[str], rows: list[list[str]]) -> str:
     """
     lines = [headers, ["---"] * len(headers), *rows]
     return "\n".join(f"| {' | '.join(line)} |" for line in lines)
-
-

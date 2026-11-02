@@ -112,12 +112,18 @@ def _vintage_for(
     Returns:
         The vintage for this version.
     """
-    if went_live is not None and went_live >= SITE_LAUNCH_DATE:
-        if previous is None or went_live >= previous:
-            return Vintage(version.label, went_live, "day")
-    if version.release_date is not None and _is_after(version.release_date, previous):
-        if version.replaced_at is None or version.release_date <= version.replaced_at:
-            return Vintage(version.label, version.release_date, "day")
+    if (
+        went_live is not None
+        and went_live >= SITE_LAUNCH_DATE
+        and (previous is None or went_live >= previous)
+    ):
+        return Vintage(version.label, went_live, "day")
+    if (
+        version.release_date is not None
+        and _is_after(version.release_date, previous)
+        and (version.replaced_at is None or version.release_date <= version.replaced_at)
+    ):
+        return Vintage(version.label, version.release_date, "day")
     return Vintage(
         version.label, _latest_possible_date(version, previous), "upper_bound"
     )

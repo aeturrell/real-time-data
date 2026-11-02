@@ -15,7 +15,7 @@
     "DecVal": {"text-color": "#FFB703"},
     "Float": {"text-color": "#FFB703"},
     "Comment": {"text-color": "#94A3B8", "italic": false},
-    "Operator": {"text-color": "#F1F5F9"},
+    "Operator": {"text-color": "#00F5D4"},
     "Variable": {"text-color": "#F1F5F9"}
   }
 }

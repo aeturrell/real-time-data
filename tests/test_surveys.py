@@ -17,6 +17,7 @@ from realtime.sources.bics import (
 )
 from realtime.sources.boe_site import BankPage, parse_published_date, spreadsheet_links
 from realtime.sources.credit_conditions import (
+    _quarter_columns,
     annex_link,
     normalise_question,
     read_annex_sheet,
@@ -87,7 +88,13 @@ def test_group_headings_carry_right_and_titles_are_ignored() -> None:
     rows = [
         ("Realised employment growth, %",),
         (None, "Realised employment growth", None, "Expected employment growth", None),
-        ("Survey date", "Single month", "3 month average", "Single month", "3 month average"),
+        (
+            "Survey date",
+            "Single month",
+            "3 month average",
+            "Single month",
+            "3 month average",
+        ),
         (datetime(2017, 1, 1), 5.1, 4.4, 0.5, 0.0),
         ("Return to Contents", None, None, None, None),
     ]
@@ -195,14 +202,8 @@ def test_ccs_sheet_without_quarters_is_rejected() -> None:
 def test_agents_month_is_dated_by_first_report_after_the_fifteenth() -> None:
     reports = [pd.Timestamp(day) for day in ("2026-09-11", "2026-10-30", "2026-12-11")]
     retrieved = pd.Timestamp("2026-12-20")
-    assert (
-        report_date_for_month(pd.Period("2026-10"), reports, retrieved)
-        == reports[1]
-    )
-    assert (
-        report_date_for_month(pd.Period("2026-11"), reports, retrieved)
-        == reports[2]
-    )
+    assert report_date_for_month(pd.Period("2026-10"), reports, retrieved) == reports[1]
+    assert report_date_for_month(pd.Period("2026-11"), reports, retrieved) == reports[2]
 
 
 def test_agents_month_after_every_report_uses_download_date() -> None:
@@ -293,3 +294,23 @@ def test_bics_correction_cannot_come_before_the_first_version() -> None:
     versions = [{"uri": "/v1", "updateDate": "2023-02-23T10:48:00.000Z"}]
     dates = version_dates(pd.Timestamp("2023-03-09"), versions)
     assert dates == [pd.Timestamp("2023-02-23"), pd.Timestamp("2023-02-23")]
+
+
+def test_quarter_columns_count_years_when_a_written_year_is_mistyped() -> None:
+    year_row = (None, 2013, None, None, None, 2013, None, None, None, 2015)
+    quarter_row = (None, "Q1", "Q2", "Q3", "Q4", "Q1", "Q2", "Q3", "Q4", "Q1")
+
+    columns = _quarter_columns(year_row, quarter_row)
+
+    assert columns[5] == pd.Period("2014Q1", "Q")
+    assert columns[9] == pd.Period("2015Q1", "Q")
+
+
+def test_quarter_columns_ignore_a_misplaced_or_missing_year() -> None:
+    year_row = (2015, None, None, None, None, None, 2016, None, 2017)
+    quarter_row = ("Q1", "Q2", "Q3", "Q4", "Q1", "Q2", "Q3", "Q4", "Q1")
+
+    columns = _quarter_columns(year_row, quarter_row)
+
+    assert columns[4] == pd.Period("2016Q1", "Q")
+    assert columns[8] == pd.Period("2017Q1", "Q")

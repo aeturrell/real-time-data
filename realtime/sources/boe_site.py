@@ -191,7 +191,9 @@ def spreadsheet_links(page_html: str) -> list[str]:
     Returns:
         Full addresses, in the order the page gives them.
     """
-    links = [html.unescape(link) for link in SPREADSHEET_LINK_PATTERN.findall(page_html)]
+    links = [
+        html.unescape(link) for link in SPREADSHEET_LINK_PATTERN.findall(page_html)
+    ]
     full_links = [
         link if link.startswith("http") else f"{BANK_OF_ENGLAND_BASE_URL}{link}"
         for link in links

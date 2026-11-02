@@ -1,6 +1,12 @@
 import pandas as pd
 
-from realtime.benchmark import Benchmark, _compare_edition, _growth
+from realtime.benchmark import (
+    RECENT_PERIODS,
+    Benchmark,
+    _compare_edition,
+    _growth,
+    recent_growth,
+)
 
 QUARTERS = pd.period_range("2024Q1", "2024Q4", freq="Q-DEC")
 BENCHMARK = Benchmark("GDP", "B1GQ_Q", "Q", "ABMI", False, 1)
@@ -33,3 +39,17 @@ def test_benchmark_covers_only_its_editions() -> None:
     assert limited.covers(pd.Timestamp("2010-06-01"))
     assert not limited.covers(pd.Timestamp("2019-01-01"))
     assert BENCHMARK.covers(pd.Timestamp("1999-02-01"))
+
+
+def test_recent_growth_keeps_each_editions_latest_periods() -> None:
+    periods = pd.period_range("2000Q1", periods=20, freq="Q-DEC")
+    levels = pd.DataFrame(
+        [[100.0 + number for number in range(20)]],
+        columns=periods,
+        index=pd.DatetimeIndex(["2005-02-01"]),
+    )
+
+    result = recent_growth(levels, 1)
+
+    assert len(result) == RECENT_PERIODS
+    assert result["period"].iloc[-1] == "2004Q4"

@@ -95,9 +95,7 @@ class HttpClient:
         Args:
             host: The website about to be contacted.
         """
-        interval = SECONDS_BETWEEN_REQUESTS_BY_HOST.get(
-            host, self.min_interval_seconds
-        )
+        interval = SECONDS_BETWEEN_REQUESTS_BY_HOST.get(host, self.min_interval_seconds)
         elapsed = time.monotonic() - self._last_request_at.get(host, 0.0)
         if elapsed < interval:
             time.sleep(interval - elapsed)

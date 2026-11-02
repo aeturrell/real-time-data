@@ -4,7 +4,7 @@
 
 This repo builds a real-time (vintage) archive of UK economic data, in the spirit of [ALFRED](https://alfred.stlouisfed.org/). For every series it records not just the latest numbers, but what was published on each date: the first estimate and every revision since. The figures currently come from two publishers: the Office for National Statistics (ONS) and the Bank of England.
 
-The result is a single tidy parquet file, `scratch/realtimedata.parquet`, built entirely from code. Every raw file downloaded is kept in `scratch/cache/` with a record of when it was fetched, so the archive can be rebuilt exactly, and new releases can be added at any time.
+The result is a single tidy parquet file, `realtimedata.parquet`, built entirely from code. Every raw file downloaded is kept in `scratch/cache/` with a record of when it was fetched, so the archive can be rebuilt exactly, and new releases can be added at any time.
 
 ## Installing
 
@@ -82,53 +82,6 @@ To study first estimates only, keep rows where `release_type == "first"`; `histo
 
 `read_archive` turns `reference_period` into `pd.Period` objects. One table holds every frequency, so the column has object dtype; `to_period_dtype` gives a true `PeriodDtype` for a single-frequency subset.
 
-## Recommended series for nowcasting
-
-Several headline indicators are held in more than one form, for example GDP as a level (`ABMI`) and as a growth rate (`IHYQ`). For pseudo-real-time work, such as testing a nowcasting model on the data that was available at each date, the safest choice is the form that stays the same throughout the sample: the same ONS measure, the same units and the same rounding, from one source (or from sources ONS publishes identically).
-
-In practice, this means preferring the published growth rates. Levels change units every few years, because ONS re-expresses chained volume measures in the prices of a new reference year. Old GDP vintages are even in 1954 or 1975 prices. So a level compared across vintages shows large jumps that are not revisions. Growth rates are not affected by this.
-
-| Indicator | Recommended `series_id` | Vintages from | Notes |
-|---|---|---|---|
-| GDP, quarter on quarter | `IHYQ` | 1992 | Checked against the OECD: 99.9% agree |
-| GDP, month on month | `ECYX` | 2018 | Monthly GDP was first published in July 2018 |
-| Nominal GDP, quarter on quarter | `YBHA_QOQ` | 1992 | |
-| GDP deflator, on a year ago | `YBGB_YOY` | 2006 | |
-| Household consumption | `ABJR_QOQ` | 1996 | |
-| Government consumption | `NMRY_QOQ` | 1996 | |
-| Gross fixed capital formation | `NPQT_QOQ` | 1996 | The August 2002 vintage holds an ONS typing error (−5.5% for 2002 Q2) |
-| Business investment | `KG7P` | 1998 | |
-| Exports and imports (volume) | `IKBK_QOQ`, `IKBL_QOQ` | 1996 | |
-| Production, month on month | `IOP_MOM` (`IOM_MOM` for manufacturing) | 1998 | |
-| Services, month on month | `IOS_MOM` | 2000 | |
-| Construction, month on month | `CON_MOM` | 2013 | |
-| Retail sales volume, month on month | `RSI_MOM` | 1998 | Not checked against the OECD, whose UK retail series is a different measure |
-| CPI inflation | `D7G7` | 1997 | Never revised, so earlier values are first publications; checked against the OECD: 100% agree |
-| RPI | `CHAW` | 1997 | Never revised; checked against the OECD: 100% agree |
-| Unemployment rate | `MGSX` | 1999 | Rolling three-month figures, stored against the month the window ends |
-| Employment rate | `LF24` | 2010 | Rolling three-month figures, as above |
-| Claimant count | `BCJD` | 1999 | |
-| Household saving ratio | `NRJS` | 1998 | |
-
-The same list, ready to copy:
-
-```python
-RECOMMENDED_SERIES = [
-    "IHYQ", "ECYX", "YBHA_QOQ", "YBGB_YOY",
-    "ABJR_QOQ", "NMRY_QOQ", "NPQT_QOQ", "KG7P", "IKBK_QOQ", "IKBL_QOQ",
-    "IOP_MOM", "IOM_MOM", "IOS_MOM", "CON_MOM", "RSI_MOM",
-    "D7G7", "CHAW",
-    "MGSX", "LF24", "BCJD",
-    "NRJS",
-]
-```
-
-To rebuild the table's start years from the archive itself, with [DuckDB](https://duckdb.org/):
-
-```bash
-duckdb -c "SELECT series_id, any_value(title) AS title, year(min(vintage_date)) AS vintages_from, year(max(vintage_date)) AS vintages_to, count(*) AS rows FROM 'scratch/realtimedata.parquet' WHERE series_id IN ('IHYQ','ECYX','YBHA_QOQ','YBGB_YOY','ABJR_QOQ','NMRY_QOQ','NPQT_QOQ','KG7P','IKBK_QOQ','IKBL_QOQ','IOP_MOM','IOM_MOM','IOS_MOM','CON_MOM','RSI_MOM','D7G7','CHAW','MGSX','LF24','BCJD','NRJS') GROUP BY series_id ORDER BY vintages_from, series_id"
-```
-
 Things to be aware of:
 
 - **Dating precision changes in late 2015.** Before then, most vintages are dated to the last day of their publication month (precision `month` or `upper_bound`); after it, to the exact day (`day`). To keep the information set defined the same way over the whole sample, move every vintage date to the end of its month:
@@ -148,6 +101,7 @@ Things to be aware of:
 - **GDP vintages from 1992 to 1998.** About 5% of growth rates in the `IHYQ` triangle differ, by up to 0.5 percentage points, from growth worked out from the `ABMI` real-time database. This is not yet explained, so treat this stretch with some caution.
 - **When using levels** (for example `ABMI` back to 1961), compare values only within a single vintage. For instance, work out growth within each vintage and only then compare across vintages.
 - **Missing releases.** Some releases are in no source collected. The labour market levels (`MGRZ`, `MGSC`, `YBUS`, `LF2S`) have no vintages between October 2023 and February 2024; the rates (`MGSX`, `LF24`) are filled from their triangles. `scratch/diagnostics.csv` flags gaps like this as `unusual_gap`.
+- **A one-day ONS error in `YBUS`.** The annual figures in the file ONS issued on 19 February 2019 are about 1,000 times too large (1,037,545 rather than 1,037.6 for 2018), and the next version, dated 20 February, corrects them. They are kept as published, so they appear as a first value or revision and then a further revision. Leave out annual `YBUS` rows dated 19 February 2019 when studying revisions.
 - **Never-revised back-fills** (`D7G7` and `CHAW` before late 2015) are dated at the end of the month after the reference month. That is later than the true release, but never earlier.
 
 ## Sources
@@ -165,7 +119,7 @@ Rolling three-month labour market figures are marked with `basis = "3m_ending"` 
 
 ## Business surveys
 
-Four business surveys are treated in the same way as every other series, and are listed under `[[survey]]` in `series.toml`. Only the headline results are taken: for example, all businesses rather than each industry. Each survey's pages are found from the publisher's own listings, and the file links are read from those pages rather than guessed. The Bank of England's website is contacted at most once every three seconds, and its `robots.txt` allows these pages. Reuse terms for the Bank's data have not yet been reviewed.
+Four business surveys are treated in the same way as every other series, and are listed under `[[survey]]` in `series.toml`. Only the headline results are taken: for example, all businesses rather than each industry. Each survey's pages are found from the publisher's own listings, and the file links are read from those pages rather than guessed. The Bank of England's website is contacted at most once every three seconds, and its `robots.txt` allows these pages.
 
 | Survey | Publisher | `dataset_id` | Reference period | Vintage date |
 |---|---|---|---|---|
@@ -200,7 +154,7 @@ Four business surveys are treated in the same way as every other series, and are
 **Credit Conditions Survey**
 
 - Usable annex spreadsheets begin with 2015 Q4. Earlier results were published mostly as PDFs, and the 2015 Q3 file has a different layout, so quarters from 2007 to 2015 first appear on 15 January 2016 as `history`.
-- Some annexes show values that later return to their earlier level, as in the 2019 Q2 and 2024 Q1 annexes. These look like slips in those files, but they are kept as published, so they appear as two revisions.
+- The row of years above the quarters has slips in some annexes: a mistyped year in the January 2016 corporate sheet, a misplaced year in all three sheets of the 2019 Q2 annex and a missing year in the 2024 Q1 corporate sheet. So the first year written is taken as the start, and the year then moves on each time the quarter labels start again.
 
 **Agents' scores**
 
@@ -215,7 +169,9 @@ Four business surveys are treated in the same way as every other series, and are
 
 ## Documentation
 
-The `docs/` folder holds a [Quarto](https://quarto.org/) website: a landing page and a guide to the data. Its charts and figures are worked out from your local copy of the data, so run `uv run realtime build` and `uv run realtime benchmark` first. Then, with Quarto installed, run
+Errors found in published files are logged in `data_issues.toml`. Add each new one there, and the site's data issues page will list it.
+
+The `docs/` folder holds a [Quarto](https://quarto.org/) website: a landing page and a guide to the data. Its charts and figures are worked out from `realtimedata.parquet` and files already in the repository. With Quarto installed, run
 
 ```bash
 uv run --group docs quarto render docs
@@ -223,6 +179,39 @@ uv run --group docs quarto render docs
 
 The site is written to `docs/_site/`.
 
-## Further development
+## Releasing the site
 
-See `PLAN.md` for the phased plan. Still to come: more UK publishers and series, archived ONS pages from the National Archives, the ONS API, and a review of the reuse terms for the Bank of England's data.
+The docs need two generated files, both kept in the repository so that GitHub Actions can build the site without rebuilding the data: `realtimedata.parquet` and `docs/oecd_gdp_growth.csv`, which holds only the recent OECD GDP growth rates for the guide's comparison chart. A full build takes hours and uses a large download cache, so GitHub Actions never runs one.
+
+The guide's table of OECD comparisons and its count of late first appearances are fixed results written into `docs/guide.qmd`, with the date they were last checked. After a data update, run `uv run realtime benchmark`, which also refreshes `docs/oecd_gdp_growth.csv`, and `uv run realtime validate`, compare them with what the guide says, and update `OECD_COMPARISON`, `OUTSIDE_CHECKS_DATE` and the text if needed. The late first appearances are in `scratch/late_first_appearances.csv`.
+
+To release a new version:
+
+1. Update the data:
+
+   ```bash
+   uv run realtime build
+   uv run realtime benchmark
+   ```
+
+2. Raise the version number, which also updates `uv.lock`:
+
+   ```bash
+   uv version --bump minor
+   ```
+
+3. Merge these changes into `main` through a pull request.
+
+When a merge into `main` changes the version in `pyproject.toml`, the `Deploy docs` workflow builds the site and publishes it to GitHub Pages. Other merges into `main` publish nothing. You can also run the workflow by hand from the repository's Actions tab, which publishes the branch you choose.
+
+GitHub Pages must be set up once for this to work: in the repository's settings, under Pages, set the source to GitHub Actions.
+
+## Checks
+
+GitHub Actions runs the tests, the pre-commit checks and a build of the site on every pull request and on every push to `main`. The site is built from the parquet file in the repository, so this checks the code and pages, not fresh data. To run the tests and pre-commit checks locally, and to run the pre-commit checks before each commit:
+
+```bash
+uv run --group dev pytest
+uv run --group dev pre-commit run --all-files
+uv run --group dev pre-commit install
+```

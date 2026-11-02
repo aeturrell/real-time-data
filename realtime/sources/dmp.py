@@ -153,9 +153,7 @@ def is_survey_month(label: object) -> bool:
     return parse_period_label(label, FREQUENCY) is not None
 
 
-def _observations(
-    spec: SurveySpec, table: SurveyTable, page: BankPage
-) -> pd.DataFrame:
+def _observations(spec: SurveySpec, table: SurveyTable, page: BankPage) -> pd.DataFrame:
     """Reads one series from a file's table.
 
     Args:
@@ -173,9 +171,7 @@ def _observations(
         return pd.DataFrame()
     records = [
         {
-            "reference_period": period_to_string(
-                parse_period_label(row[0], FREQUENCY)
-            ),
+            "reference_period": period_to_string(parse_period_label(row[0], FREQUENCY)),
             "vintage_date": page.published,
             "value": value,
             "vintage_date_precision": PRECISION,

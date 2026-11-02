@@ -5,6 +5,8 @@ jupyter: python3
 ---
 
 ```{python}
+import io
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -17,16 +19,13 @@ from matplotlib.ticker import PercentFormatter
 import _chart_theme as theme
 from realtime import read_archive, revision_triangle
 from realtime.benchmark import (
-    BENCHMARKS,
     DAYS_AFTER_EDITION,
     DAYS_BEFORE_EDITION,
     LOOSE_TOLERANCE,
-    RECENT_PERIODS,
     ROUNDING_TOLERANCE,
-    oecd_editions,
+    GDP_BENCHMARK_SERIES,
 )
-from realtime.cache import DownloadCache
-from realtime.settings import BENCHMARK_PATH, LATE_FIRST_APPEARANCES_PATH
+from realtime.settings import OECD_GDP_GROWTH_PATH
 from realtime.validate import (
     growth_agreement,
     growth_agreement_report,
@@ -39,8 +38,22 @@ theme.apply_chart_theme()
 
 archive = read_archive()
 archive["vintage_year"] = archive["vintage_date"].dt.year
-benchmark = pd.read_csv(BENCHMARK_PATH)
-late_first_appearances = pd.read_csv(LATE_FIRST_APPEARANCES_PATH)
+OUTSIDE_CHECKS_DATE = "2 November 2026"
+OECD_COMPARISON = """benchmark,oecd,ours,compared,editions,first_edition,strict_within_0.05,nearby_within_0.05,nearby_within_0.15
+"GDP volume, q/q",B1GQ_Q,ABMI,3992,333,1999-02,0.992,1.0,1.0
+"GDP volume, q/q (triangle)",B1GQ_Q,IHYQ,3992,333,1999-02,0.97,0.986,0.999
+"GDP current prices, q/q",B1GQ_V,YBHA,3989,333,1999-02,0.981,0.999,1.0
+"Government consumption, q/q",P3_S13_Q,NMRY,3991,333,1999-02,0.916,0.94,0.998
+"Gross fixed capital formation, q/q",P51G_Q,NPQT,3991,333,1999-02,0.866,0.887,0.997
+"Exports, q/q",P6_Q,IKBK,3991,333,1999-02,0.941,0.97,0.998
+"Imports, q/q",P7_Q,IKBL,3991,333,1999-02,0.93,0.959,0.999
+"GDP deflator, y/y (triangle)",B1GQ_D,YBGB_YOY,2947,246,2006-05,0.869,0.902,1.0
+"Production, m/m (triangle)",PRVM,IOP_MOM,3938,333,1999-02,0.662,0.796,0.993
+"Production, m/m",PRVM,K222,1579,132,2015-11,0.958,0.985,1.0
+"RPI, y/y",CP,CHAW,1140,95,1999-02,1.0,1.0,1.0
+"CPI, y/y",CP,D7G7,1439,120,2008-01,0.714,0.714,1.0
+"CPIH, y/y",CP,L55O,1127,94,2019-01,0.758,0.758,1.0"""
+benchmark = pd.read_csv(io.StringIO(OECD_COMPARISON))
 look_ahead = look_ahead_summary(archive)
 agreement = growth_agreement_report(archive)
 
@@ -123,7 +136,6 @@ look_ahead_workforce_jobs = int(
     look_ahead.loc[look_ahead["series_id"] == "DYDC", "rows"].sum()
 )
 look_ahead_share = share_text(look_ahead_rows / len(archive), 3)
-late_first_count = f"{len(late_first_appearances)}"
 mixed_basis_count = f"{mixed_basis_summary(archive)['series_id'].nunique()}"
 oecd_series_count = f"{benchmark['ours'].nunique()}"
 oecd_edition_count = f"{benchmark['editions'].max()}"
@@ -626,26 +638,24 @@ There are two ways the archive could be wrong. It could hold the wrong number, o
 
 ### Comparison with an independent archive
 
-The OECD has kept its own record of UK statistics, one edition a month since `{python} oecd_first_edition`. It was assembled separately, so agreement would be hard to get by accident. Each comparison takes the most recent periods in each OECD edition, works out growth rates and checks them against the archive around the same date. That covers `{python} oecd_value_count` comparisons on `{python} oecd_series_count` of the archive's `{python} series_count` series, across up to `{python} oecd_edition_count` editions.
+The OECD has kept its own record of UK statistics, one edition a month since `{python} oecd_first_edition`. It was assembled separately, so agreement would be hard to get by accident. Each comparison takes the most recent periods in each OECD edition, works out growth rates and checks them against the archive around the same date. That covers `{python} oecd_value_count` comparisons on `{python} oecd_series_count` of the archive's `{python} series_count` series, across up to `{python} oecd_edition_count` editions. These results were last worked out on `{python} OUTSIDE_CHECKS_DATE`.
 
 ```{python}
 #| label: fig-oecd-gdp
 #| fig-cap: "Each dot compares one GDP growth figure in an OECD edition with the archive's figure on the day before that edition's month began. Dots inside the band agree to within rounding. A few fall outside because the OECD collected a release at a different time from the one this strict test assumes."
 #| fig-alt: "A scatter chart of differences between the archive and the OECD for quarterly GDP growth, by OECD edition from 1999 to 2026. Nearly all dots sit on or close to zero and inside a narrow band of plus or minus 0.05 percentage points, with only a few outliers."
 
-GDP_BENCHMARK_NAME = "GDP volume, q/q"
 ROUNDING_BAND = round(ROUNDING_TOLERANCE, 2)
 OECD_FIGURE_SIZE = (8.6, 3.2)
 DOT_SIZE = 7
 ONE_DAY = pd.Timedelta(days=1)
 EDITION_MARGIN = pd.Timedelta(days=180)
 
-gdp_benchmark = next(item for item in BENCHMARKS if item.name == GDP_BENCHMARK_NAME)
-oecd_levels = oecd_editions(DownloadCache(offline=True), gdp_benchmark)
-oecd_growth = (oecd_levels / oecd_levels.shift(1, axis=1) - 1) * PERCENT
+oecd_growth = pd.read_csv(OECD_GDP_GROWTH_PATH, parse_dates=["edition"])
+oecd_growth["period"] = pd.PeriodIndex(oecd_growth["period"], freq="Q-DEC")
 
 archive_levels = revision_triangle(
-    archive.loc[archive["frequency"] == "Q"], gdp_benchmark.series_id
+    archive.loc[archive["frequency"] == "Q"], GDP_BENCHMARK_SERIES
 )
 archive_levels.columns = pd.PeriodIndex(list(archive_levels.columns), freq="Q-DEC")
 archive_levels = archive_levels.reindex(
@@ -654,26 +664,29 @@ archive_levels = archive_levels.reindex(
 archive_growth = (archive_levels / archive_levels.shift(1, axis=1) - 1) * PERCENT
 
 
-def edition_differences(edition: pd.Timestamp) -> list[dict[str, object]]:
+def edition_differences(edition: pd.Timestamp, published: pd.Series) -> list[dict[str, object]]:
     """Compares the most recent periods in one OECD edition with the archive.
 
     Args:
         edition: The first day of the edition's month.
+        published: The edition's growth rate for each recent period.
 
     Returns:
         One record per period compared, holding the difference.
     """
-    published = oecd_growth.loc[edition].dropna()
     known = archive_growth.loc[: edition - ONE_DAY]
-    if published.empty or known.empty:
+    if known.empty:
         return []
-    recent = published.index[-RECENT_PERIODS:]
-    gaps = (known.iloc[-1].reindex(recent) - published.reindex(recent)).dropna()
+    gaps = (known.iloc[-1].reindex(published.index) - published).dropna()
     return [{"edition": edition, "difference": gap} for gap in gaps]
 
 
 differences = pd.DataFrame(
-    [record for edition in oecd_growth.index for record in edition_differences(edition)]
+    [
+        record
+        for edition, rows in oecd_growth.groupby("edition")
+        for record in edition_differences(edition, rows.set_index("period")["growth"])
+    ]
 )
 in_band_share = (differences["difference"].abs() <= ROUNDING_BAND + 1e-9).mean()
 
@@ -777,7 +790,7 @@ One of the largest gaps is the `{python} typing_error_month` typing error mentio
 ### Checks on dating
 
 - **Figures published before their period ended.** A figure dated on or before the end of the period it describes would suggest a wrong date. `{python} look_ahead_rows` of `{python} row_count` rows (`{python} look_ahead_share`) meet this test. `{python} look_ahead_workforce_jobs` are annual workforce jobs figures that appear before their year is over, published that way on ONS's page, so they do not look like dating errors. Surveys are left out of this test, because they can properly report on a month before it ends. The other `{python} other_look_ahead_rows` are production and manufacturing figures (for example, `{python} other_look_ahead_example`), which have not been looked into further.
-- **First figures that arrive late.** If a period appeared in the archive later than in one of the sources collected, a source would have been wrongly set aside. There are `{python} late_first_count` such cases.
+- **First figures that arrive late.** If a period appeared in the archive later than in one of the sources collected, a source would have been wrongly set aside. There were none when this was last checked, on `{python} OUTSIDE_CHECKS_DATE`.
 - **Mixed definitions.** A monthly series should not mix single months with rolling three-month windows. `{python} mixed_basis_count` series do.
 
 ### Traceable values
@@ -791,7 +804,7 @@ The archive is put together by a program from stored copies of the published fil
 - **Missing releases.** Some releases are in no source collected. For example, the labour market levels have no vintages between `{python} labour_gap_start` and `{python} labour_gap_end`. Check a series for gaps like this before relying on it.
 - **Business surveys.** Survey results come from samples of firms and are not comparable with official figures or with each other. Their histories are also short in real time: BICS results start in December 2021 and mostly May 2022, Credit Conditions Survey spreadsheets in January 2016, and Decision Maker Panel headline worksheets in late 2021 or 2022. Earlier survey periods first appear late, often as `history`.
 - **BICS release dates.** 20 of the 160 ONS editions carry the previous wave's release date. These use the next release instead, so they can be about two weeks late.
-- **Agents' scores.** Past versions of the file cannot be seen, so dates are estimates that can be up to about three months late, and any later correction by the Bank would be hidden. The [README](https://github.com/aeturrell/real-time-data#business-surveys){target="_blank" rel="noopener"} sets out the limits of each survey in full.
+- **Agents' scores.** Past versions of the file cannot be seen, so dates are estimates that can be up to about three months late, and any later correction by the Bank would be hidden.
 - **Sources not yet used.** ONS pages saved by the National Archives and the ONS API could fill in more of the years before `{python} exact_dating_start`.
 
 ## Which series to use

@@ -1,0 +1,73 @@
+---
+title: "Data issues"
+subtitle: "Likely errors as found in published source files"
+jupyter: python3
+---
+
+```{python}
+from itertools import groupby
+
+from IPython.display import Markdown
+
+from realtime.data_issues import DataIssue, load_data_issues
+
+issues = load_data_issues()
+issue_count = len(issues)
+
+
+def issue_section(issue: DataIssue) -> str:
+    """Writes one issue as Markdown.
+
+    Args:
+        issue: The issue.
+
+    Returns:
+        The issue's heading and details.
+    """
+    details = {
+        "Dataset": issue.dataset,
+        "File published": issue.published,
+        "Where": issue.location,
+        "Problem": issue.problem,
+        "Correct content": issue.correction,
+        "Effect if used as published": issue.effect,
+        "What this archive does": issue.handling,
+        "File": f"`{issue.file_name}`" if issue.file_name else None,
+        "Publisher's page": f"[Go to the page]({issue.source_page})" if issue.source_page else None,
+        "Logged": issue.logged,
+        "Reference": f"`{issue.id}`",
+    }
+    lines = [f"- **{name}:** {text}" for name, text in details.items() if text]
+    return "\n".join([f"### {issue.title}", "", *lines])
+
+
+def publisher_section(publisher: str, publisher_issues: list[DataIssue]) -> str:
+    """Writes all of one publisher's issues as Markdown.
+
+    Args:
+        publisher: The publisher.
+        publisher_issues: The publisher's issues.
+
+    Returns:
+        The publisher's heading and issues.
+    """
+    return "\n\n".join([f"## {publisher}", *map(issue_section, publisher_issues)])
+```
+
+::: {.lead-text}
+While building this archive, we have found `{python} issue_count` errors in published files. They are listed here so that publishers can correct them and other users can avoid them.
+:::
+
+Each entry says where the error is, what goes wrong if the values are used as published and what this archive does about it. The archive normally keeps numbers as published, so it corrects how a file is read but does not change the published values themselves.
+
+Report errors or updates on [GitHub Issues](https://github.com/aeturrell/real-time-data/issues).
+
+```{python}
+#| output: asis
+Markdown(
+    "\n\n".join(
+        publisher_section(publisher, list(publisher_issues))
+        for publisher, publisher_issues in groupby(issues, key=lambda issue: issue.publisher)
+    )
+)
+```

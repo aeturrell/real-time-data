@@ -367,7 +367,7 @@ def _keep_best_row_per_key(observations: pd.DataFrame) -> pd.DataFrame:
         One row per key: lowest rank first, then the last row given.
     """
     with_order = observations.assign(_order=range(len(observations)))
-    rank = with_order[RANK_COLUMN] if RANK_COLUMN in with_order else 0
+    rank = with_order.get(RANK_COLUMN, 0)
     with_order = with_order.assign(
         _sort_rank=rank, _reverse_order=-with_order["_order"]
     )

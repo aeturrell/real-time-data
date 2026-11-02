@@ -95,6 +95,13 @@ a:focus-visible, button:focus-visible {
   font-weight: 600;
 }
 
+@include media-breakpoint-up(lg) {
+  .navbar-nav > .nav-item {
+    border-left: 1px solid $corrupted-violet;
+    padding-inline: 0.5rem;
+  }
+}
+
 .nav-footer {
   border-top: 2px solid $corrupted-violet;
   font-size: 0.8rem;

@@ -1,0 +1,47 @@
+<script>
+  const CALL_PATTERN = /[A-Za-z_]\w*(?=\()/g;
+  const TRAILING_NAME_PATTERN = /[A-Za-z_]\w*$/;
+  const FUNCTION_CLASS = "fu";
+  const KEYWORD_CLASS = "kw";
+
+  function colouredSpan(text, className) {
+    const span = document.createElement("span");
+    span.className = className;
+    span.textContent = text;
+    return span;
+  }
+
+  function isFollowedByEquals(node) {
+    const next = node.nextSibling;
+    return next?.classList?.contains("op") && next.textContent === "=";
+  }
+
+  function appendCalls(fragment, text) {
+    let position = 0;
+    for (const match of text.matchAll(CALL_PATTERN)) {
+      fragment.append(text.slice(position, match.index));
+      fragment.append(colouredSpan(match[0], FUNCTION_CLASS));
+      position = match.index + match[0].length;
+    }
+    fragment.append(text.slice(position));
+  }
+
+  function colourTextNode(node) {
+    const text = node.textContent;
+    const keywordArgument = isFollowedByEquals(node) && text.match(TRAILING_NAME_PATTERN);
+    const fragment = document.createDocumentFragment();
+    if (keywordArgument) {
+      appendCalls(fragment, text.slice(0, keywordArgument.index));
+      fragment.append(colouredSpan(keywordArgument[0], KEYWORD_CLASS));
+    } else {
+      appendCalls(fragment, text);
+    }
+    node.replaceWith(fragment);
+  }
+
+  document.querySelectorAll("pre.sourceCode.python code > span").forEach((line) => {
+    [...line.childNodes]
+      .filter((node) => node.nodeType === Node.TEXT_NODE)
+      .forEach(colourTextNode);
+  });
+</script>

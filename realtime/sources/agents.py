@@ -106,7 +106,9 @@ def report_date_for_month(
     Returns:
         The date of the first report after the fifteenth of the month.
     """
-    cutoff = month.start_time + pd.Timedelta(days=LAST_DAY_BEFORE_ROW_COUNTS_AS_REPORTED)
+    cutoff = month.start_time + pd.Timedelta(
+        days=LAST_DAY_BEFORE_ROW_COUNTS_AS_REPORTED
+    )
     position = bisect_left(report_dates, cutoff)
     return report_dates[position] if position < len(report_dates) else retrieved
 

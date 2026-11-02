@@ -74,6 +74,8 @@ Economic statistics change after they are first published. This project collects
 :::
 :::
 
+> WARNING: This project has been largely vibe-coded. Use with caution.
+
 ::: {.button-row}
 [Read the guide to the data](guide.qmd)
 :::
@@ -92,6 +94,23 @@ You get one file, in parquet format, holding one table. Each row says: on this d
 
 ## Get the data
 
-Details of how to download the file will appear here soon.
+You can [download the file or query it directly](accessing_the_data.qmd), without an account.
 
 The [guide to the data](guide.qmd) explains what the archive holds, the decisions behind it and how far you can rely on it. Read it before using the figures in your own work.
+
+## If you use the data, cite us
+
+The file is updated as new figures are published, so the citation gives the date of the latest publication it holds. Please cite the version you used:
+
+```{python}
+#| output: asis
+latest_publication = archive["vintage_date"].max()
+citation = f"""@misc{{turrell_uk_data,
+  author = {{Turrell, Arthur}},
+  title = {{{{UK}} Real-Time Data: What Was Published about the {{UK}} Economy, and When}},
+  year = {{{latest_publication.year}}},
+  url = {{https://aeturrell.github.io/real-time-data/}},
+  note = {{Includes publications up to {latest_publication.day} {latest_publication:%B %Y}}}
+}}"""
+print(f"```bibtex\n{citation}\n```")
+```

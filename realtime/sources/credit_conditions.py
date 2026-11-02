@@ -8,6 +8,7 @@ earlier quarters, which the archive therefore labels "history".
 
 import re
 from collections.abc import Iterator
+from itertools import pairwise
 
 import pandas as pd
 from loguru import logger
@@ -196,9 +197,11 @@ def _find_year_row(rows: list[Row]) -> int:
     Raises:
         ValueError: If there is no such row.
     """
-    for index, (row, below) in enumerate(zip(rows, rows[1:])):
+    for index, (row, below) in enumerate(pairwise(rows)):
         has_year = any(_as_year(cell) is not None for cell in row)
-        has_quarter = any(QUARTER_LABEL_PATTERN.match(clean_text(cell)) for cell in below)
+        has_quarter = any(
+            QUARTER_LABEL_PATTERN.match(clean_text(cell)) for cell in below
+        )
         if has_year and has_quarter:
             return index
     raise ValueError("no row of years with quarters below it")
@@ -206,6 +209,11 @@ def _find_year_row(rows: list[Row]) -> int:
 
 def _quarter_columns(year_row: Row, quarter_row: Row) -> dict[int, pd.Period]:
     """Reads which quarter each column holds.
+
+    The first year written gives the starting point, and the year then moves on each
+    time the quarter labels start again. Later years written in the row are not used,
+    because some annexes misplace or mistype them: the 2019 Q2 annex puts 2016 two
+    columns late, and the first 2016 annex's corporate sheet gives 2013 for 2014.
 
     Args:
         year_row: The row of years, each written once above its quarters.
@@ -216,14 +224,18 @@ def _quarter_columns(year_row: Row, quarter_row: Row) -> dict[int, pd.Period]:
     """
     columns: dict[int, pd.Period] = {}
     year = None
+    previous_quarter = None
     for position, cell in enumerate(quarter_row):
-        if position < len(year_row):
-            year = _as_year(year_row[position]) or year
+        if year is None and position < len(year_row):
+            year = _as_year(year_row[position])
         label = QUARTER_LABEL_PATTERN.match(clean_text(cell))
-        if label and year:
-            columns[position] = pd.Period(
-                year=year, quarter=int(label[1]), freq="Q-DEC"
-            )
+        if not label or year is None:
+            continue
+        quarter = int(label[1])
+        if previous_quarter is not None and quarter <= previous_quarter:
+            year += 1
+        columns[position] = pd.Period(year=year, quarter=quarter, freq="Q-DEC")
+        previous_quarter = quarter
     return columns
 
 
