@@ -13,6 +13,7 @@ BENCHMARK_PATH = SCRATCH_DIR / "oecd_benchmark.csv"
 LATE_FIRST_APPEARANCES_PATH = SCRATCH_DIR / "late_first_appearances.csv"
 
 ONS_BASE_URL = "https://www.ons.gov.uk"
+BANK_OF_ENGLAND_BASE_URL = "https://www.bankofengland.co.uk"
 ONS_SEARCH_API_URL = "https://api.beta.ons.gov.uk/v1/search"
 USER_AGENT = "real-time-data/0.1 (+https://github.com/aeturrell/real-time-data)"
 

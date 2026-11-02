@@ -1,7 +1,8 @@
 """Turning the many ways ONS labels time periods into proper pandas periods.
 
 Reference periods are stored as strings that pd.Period reads unambiguously:
-"2024" (annual), "2024Q1" (quarterly) and "2024-03" (monthly).
+"2024" (annual), "2024Q1" (quarterly), "2024-03" (monthly) and "2024-03-17"
+(daily, used for survey waves that close on a given day).
 """
 
 import re
@@ -9,8 +10,8 @@ from datetime import datetime
 
 import pandas as pd
 
-FREQUENCY_TO_PANDAS = {"A": "Y-DEC", "Q": "Q-DEC", "M": "M"}
-PANDAS_TO_FREQUENCY = {"Y-DEC": "A", "Q-DEC": "Q", "M": "M"}
+FREQUENCY_TO_PANDAS = {"A": "Y-DEC", "Q": "Q-DEC", "M": "M", "D": "D"}
+PANDAS_TO_FREQUENCY = {"Y-DEC": "A", "Q-DEC": "Q", "M": "M", "D": "D"}
 
 QUARTER_PATTERN = re.compile(r"^(\d{4})\s*Q([1-4])$")
 QUARTER_FIRST_PATTERN = re.compile(r"^Q([1-4])\s+(\d{4})$")

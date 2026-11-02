@@ -618,3 +618,1293 @@ title = "Total business investment, chained volume measures"
 measure = "£m; CVM; SA"
 dataset_path = "/economy/grossdomesticproductgdp/datasets/businessinvestmentrealtimedatabase"
 sheet_pattern = "^Data_Table$"
+
+# Surveys outside the page-history routes. See "Sources beyond ONS" in the README.
+
+[[survey]]
+id = "BICS_TURNOVER_EXP_INCREASE"
+short_name = "bics_turnover_exp_increase"
+title = "BICS: expected turnover next month: expect turnover to increase"
+measure = "Proportion of responding businesses, all businesses, weighted; currently trading"
+survey = "BICS"
+sheet = '^Turnover Expectations TS \(WTD\)$'
+answer = "Expect turnover to increase"
+trading_status = "Currently trading"
+
+[[survey]]
+id = "BICS_TURNOVER_EXP_SAME"
+short_name = "bics_turnover_exp_same"
+title = "BICS: expected turnover next month: expect turnover to stay the same"
+measure = "Proportion of responding businesses, all businesses, weighted; currently trading"
+survey = "BICS"
+sheet = '^Turnover Expectations TS \(WTD\)$'
+answer = "Expect turnover to stay the same"
+trading_status = "Currently trading"
+
+[[survey]]
+id = "BICS_TURNOVER_EXP_DECREASE"
+short_name = "bics_turnover_exp_decrease"
+title = "BICS: expected turnover next month: expect turnover to decrease"
+measure = "Proportion of responding businesses, all businesses, weighted; currently trading"
+survey = "BICS"
+sheet = '^Turnover Expectations TS \(WTD\)$'
+answer = "Expect turnover to decrease"
+trading_status = "Currently trading"
+
+[[survey]]
+id = "BICS_TURNOVER_INCREASED"
+short_name = "bics_turnover_increased"
+title = "BICS: turnover compared with the previous month: turnover increased"
+measure = "Proportion of responding businesses, all businesses, weighted; currently trading"
+survey = "BICS"
+sheet = '^Financial Performance TS1 \(WTD\)$'
+answer = "Turnover increased"
+trading_status = "Currently trading"
+
+[[survey]]
+id = "BICS_TURNOVER_SAME"
+short_name = "bics_turnover_same"
+title = "BICS: turnover compared with the previous month: turnover stayed the same"
+measure = "Proportion of responding businesses, all businesses, weighted; currently trading"
+survey = "BICS"
+sheet = '^Financial Performance TS1 \(WTD\)$'
+answer = "Turnover stayed the same"
+trading_status = "Currently trading"
+
+[[survey]]
+id = "BICS_TURNOVER_DECREASED"
+short_name = "bics_turnover_decreased"
+title = "BICS: turnover compared with the previous month: turnover decreased"
+measure = "Proportion of responding businesses, all businesses, weighted; currently trading"
+survey = "BICS"
+sheet = '^Financial Performance TS1 \(WTD\)$'
+answer = "Turnover decreased"
+trading_status = "Currently trading"
+
+[[survey]]
+id = "BICS_PERFORMANCE_INCREASED"
+short_name = "bics_performance_increased"
+title = "BICS: business performance compared with the previous month: performance increased"
+measure = "Proportion of responding businesses, all businesses, weighted; currently trading"
+survey = "BICS"
+sheet = '^Performance TS \(WTD\) \(1\)$'
+answer = "Performance increased"
+trading_status = "Currently trading"
+
+[[survey]]
+id = "BICS_PERFORMANCE_DECREASED"
+short_name = "bics_performance_decreased"
+title = "BICS: business performance compared with the previous month: performance decreased"
+measure = "Proportion of responding businesses, all businesses, weighted; currently trading"
+survey = "BICS"
+sheet = '^Performance TS \(WTD\) \(1\)$'
+answer = "Performance decreased"
+trading_status = "Currently trading"
+
+[[survey]]
+id = "BICS_PERFORMANCE_EXP_INCREASE"
+short_name = "bics_performance_exp_increase"
+title = "BICS: expected business performance: performance will increase"
+measure = "Proportion of responding businesses, all businesses, weighted; currently trading"
+survey = "BICS"
+sheet = '^Performance TS \(WTD\) \(2\)$'
+answer = "Performance will increase"
+trading_status = "Currently trading"
+
+[[survey]]
+id = "BICS_PERFORMANCE_EXP_DECREASE"
+short_name = "bics_performance_exp_decrease"
+title = "BICS: expected business performance: performance will decrease"
+measure = "Proportion of responding businesses, all businesses, weighted; currently trading"
+survey = "BICS"
+sheet = '^Performance TS \(WTD\) \(2\)$'
+answer = "Performance will decrease"
+trading_status = "Currently trading"
+
+[[survey]]
+id = "BICS_DOMESTIC_DEMAND_INCREASED"
+short_name = "bics_domestic_demand_increased"
+title = "BICS: domestic demand compared with the previous month: demand increased"
+measure = "Proportion of responding businesses, all businesses, weighted; currently trading"
+survey = "BICS"
+sheet = '^Domestic Demand TS \(WTD\)$'
+answer = "Demand increased"
+trading_status = "Currently trading"
+
+[[survey]]
+id = "BICS_INTERNATIONAL_DEMAND_INCREASED"
+short_name = "bics_international_demand_increased"
+title = "BICS: international demand compared with the previous month: demand increased"
+measure = "Proportion of responding businesses, all businesses, weighted; currently trading"
+survey = "BICS"
+sheet = '^International Demand TS \(WTD\)$'
+answer = "Demand increased"
+trading_status = "Currently trading"
+
+[[survey]]
+id = "BICS_DOMESTIC_DEMAND_DECREASED"
+short_name = "bics_domestic_demand_decreased"
+title = "BICS: domestic demand compared with the previous month: demand decreased"
+measure = "Proportion of responding businesses, all businesses, weighted; currently trading"
+survey = "BICS"
+sheet = '^Domestic Demand TS \(WTD\)$'
+answer = "Demand decreased"
+trading_status = "Currently trading"
+
+[[survey]]
+id = "BICS_INTERNATIONAL_DEMAND_DECREASED"
+short_name = "bics_international_demand_decreased"
+title = "BICS: international demand compared with the previous month: demand decreased"
+measure = "Proportion of responding businesses, all businesses, weighted; currently trading"
+survey = "BICS"
+sheet = '^International Demand TS \(WTD\)$'
+answer = "Demand decreased"
+trading_status = "Currently trading"
+
+[[survey]]
+id = "BICS_PRICES_BOUGHT_INCREASED"
+short_name = "bics_prices_bought_increased"
+title = "BICS: prices paid compared with the previous month: prices increased"
+measure = "Proportion of responding businesses, all businesses, weighted; not permanently stopped trading"
+survey = "BICS"
+sheet = '^Prices Bought TS \(WTD\)$'
+answer = "Prices increased"
+trading_status = "Not permanently stopped trading"
+
+[[survey]]
+id = "BICS_PRICES_SOLD_INCREASED"
+short_name = "bics_prices_sold_increased"
+title = "BICS: prices charged compared with the previous month: prices increased"
+measure = "Proportion of responding businesses, all businesses, weighted; not permanently stopped trading"
+survey = "BICS"
+sheet = '^Prices Sold TS \(WTD\)$'
+answer = "Prices increased"
+trading_status = "Not permanently stopped trading"
+
+[[survey]]
+id = "BICS_PRICES_BOUGHT_SAME"
+short_name = "bics_prices_bought_same"
+title = "BICS: prices paid compared with the previous month: prices stayed the same"
+measure = "Proportion of responding businesses, all businesses, weighted; not permanently stopped trading"
+survey = "BICS"
+sheet = '^Prices Bought TS \(WTD\)$'
+answer = "Prices stayed the same"
+trading_status = "Not permanently stopped trading"
+
+[[survey]]
+id = "BICS_PRICES_SOLD_SAME"
+short_name = "bics_prices_sold_same"
+title = "BICS: prices charged compared with the previous month: prices stayed the same"
+measure = "Proportion of responding businesses, all businesses, weighted; not permanently stopped trading"
+survey = "BICS"
+sheet = '^Prices Sold TS \(WTD\)$'
+answer = "Prices stayed the same"
+trading_status = "Not permanently stopped trading"
+
+[[survey]]
+id = "BICS_PRICES_BOUGHT_DECREASED"
+short_name = "bics_prices_bought_decreased"
+title = "BICS: prices paid compared with the previous month: prices decreased"
+measure = "Proportion of responding businesses, all businesses, weighted; not permanently stopped trading"
+survey = "BICS"
+sheet = '^Prices Bought TS \(WTD\)$'
+answer = "Prices decreased"
+trading_status = "Not permanently stopped trading"
+
+[[survey]]
+id = "BICS_PRICES_SOLD_DECREASED"
+short_name = "bics_prices_sold_decreased"
+title = "BICS: prices charged compared with the previous month: prices decreased"
+measure = "Proportion of responding businesses, all businesses, weighted; not permanently stopped trading"
+survey = "BICS"
+sheet = '^Prices Sold TS \(WTD\)$'
+answer = "Prices decreased"
+trading_status = "Not permanently stopped trading"
+
+[[survey]]
+id = "BICS_PRICE_EXP_INCREASE"
+short_name = "bics_price_exp_increase"
+title = "BICS: expected prices charged: prices will increase"
+measure = "Proportion of responding businesses, all businesses, weighted; not permanently stopped trading"
+survey = "BICS"
+sheet = '^Price Expectations TS \(WTD\)$'
+answer = "Prices will increase"
+trading_status = "Not permanently stopped trading"
+
+[[survey]]
+id = "BICS_PRICE_EXP_SAME"
+short_name = "bics_price_exp_same"
+title = "BICS: expected prices charged: prices will stay the same"
+measure = "Proportion of responding businesses, all businesses, weighted; not permanently stopped trading"
+survey = "BICS"
+sheet = '^Price Expectations TS \(WTD\)$'
+answer = "Prices will stay the same"
+trading_status = "Not permanently stopped trading"
+
+[[survey]]
+id = "BICS_PRICE_EXP_DECREASE"
+short_name = "bics_price_exp_decrease"
+title = "BICS: expected prices charged: prices will decrease"
+measure = "Proportion of responding businesses, all businesses, weighted; not permanently stopped trading"
+survey = "BICS"
+sheet = '^Price Expectations TS \(WTD\)$'
+answer = "Prices will decrease"
+trading_status = "Not permanently stopped trading"
+
+[[survey]]
+id = "BICS_WORKER_SHORTAGE_YES"
+short_name = "bics_worker_shortage_yes"
+title = "BICS: currently experiencing a shortage of workers"
+measure = "Proportion of responding businesses, all businesses, weighted; not permanently stopped trading"
+survey = "BICS"
+sheet = '^Worker Shortage( TS)? \(WTD\)( \(1\))?$'
+answer = "Yes"
+trading_status = "Not permanently stopped trading"
+
+[[survey]]
+id = "BICS_RECRUITMENT_DIFFICULTY_YES"
+short_name = "bics_recruitment_difficulty_yes"
+title = "BICS: difficulties recruiting employees last month"
+measure = "Proportion of responding businesses, all businesses, weighted; not permanently stopped trading"
+survey = "BICS"
+sheet = '^Recruitment TS \(WTD\)( \(1\))?$'
+answer = "Yes"
+trading_status = "Not permanently stopped trading"
+
+[[survey]]
+id = "BICS_INSOLVENCY_RISK_SEVERE"
+short_name = "bics_insolvency_risk_severe"
+title = "BICS: risk of insolvency: severe"
+measure = "Proportion of responding businesses, all businesses, weighted; not permanently stopped trading"
+survey = "BICS"
+sheet = '^Insolvency TS \(WTD\)$'
+answer = "Severe risk"
+trading_status = "Not permanently stopped trading"
+
+[[survey]]
+id = "BICS_INSOLVENCY_RISK_MODERATE"
+short_name = "bics_insolvency_risk_moderate"
+title = "BICS: risk of insolvency: moderate"
+measure = "Proportion of responding businesses, all businesses, weighted; not permanently stopped trading"
+survey = "BICS"
+sheet = '^Insolvency TS \(WTD\)$'
+answer = "Moderate risk"
+trading_status = "Not permanently stopped trading"
+
+[[survey]]
+id = "BICS_CASH_RESERVES_NONE"
+short_name = "bics_cash_reserves_none"
+title = "BICS: cash reserves: none"
+measure = "Proportion of responding businesses, all businesses, weighted; not permanently stopped trading"
+survey = "BICS"
+sheet = '^Cash Reserves TS \(WTD\)$'
+answer = "Business has no cash reserves"
+trading_status = "Not permanently stopped trading"
+
+[[survey]]
+id = "BICS_CASH_RESERVES_UNDER_1M"
+short_name = "bics_cash_reserves_under_1m"
+title = "BICS: cash reserves: less than one month"
+measure = "Proportion of responding businesses, all businesses, weighted; not permanently stopped trading"
+survey = "BICS"
+sheet = '^Cash Reserves TS \(WTD\)$'
+answer = "Less than one month"
+trading_status = "Not permanently stopped trading"
+
+[[survey]]
+id = "BICS_CAPEX_EXP_INCREASE"
+short_name = "bics_capex_exp_increase"
+title = "BICS: expected capital expenditure: capital expenditure will increase"
+measure = "Proportion of responding businesses, all businesses, weighted; not permanently stopped trading"
+survey = "BICS"
+sheet = '^Cap Ex TS \(WTD\) \(1\)$'
+answer = "Capital expenditure will increase"
+trading_status = "Not permanently stopped trading"
+
+[[survey]]
+id = "BICS_CAPEX_EXP_DECREASE"
+short_name = "bics_capex_exp_decrease"
+title = "BICS: expected capital expenditure: capital expenditure will decrease"
+measure = "Proportion of responding businesses, all businesses, weighted; not permanently stopped trading"
+survey = "BICS"
+sheet = '^Cap Ex TS \(WTD\) \(1\)$'
+answer = "Capital expenditure will decrease"
+trading_status = "Not permanently stopped trading"
+
+[[survey]]
+id = "BICS_MAIN_CONCERN_ENERGY"
+short_name = "bics_main_concern_energy"
+title = "BICS: main concern next month: energy prices"
+measure = "Proportion of responding businesses, all businesses, weighted; not permanently stopped trading"
+survey = "BICS"
+sheet = '^Business Concerns TS \(WTD\)$'
+answer = "Energy prices"
+trading_status = "Not permanently stopped trading"
+
+[[survey]]
+id = "BICS_MAIN_CONCERN_DEMAND"
+short_name = "bics_main_concern_demand"
+title = "BICS: main concern next month: falling demand of goods and services"
+measure = "Proportion of responding businesses, all businesses, weighted; not permanently stopped trading"
+survey = "BICS"
+sheet = '^Business Concerns TS \(WTD\)$'
+answer = "Falling demand of goods and services"
+trading_status = "Not permanently stopped trading"
+
+[[survey]]
+id = "BICS_MAIN_CONCERN_INFLATION"
+short_name = "bics_main_concern_inflation"
+title = "BICS: main concern next month: inflation of goods and services prices"
+measure = "Proportion of responding businesses, all businesses, weighted; not permanently stopped trading"
+survey = "BICS"
+sheet = '^Business Concerns TS \(WTD\)$'
+answer = "Inflation of goods and services prices"
+trading_status = "Not permanently stopped trading"
+
+[[survey]]
+id = "BICS_MAIN_CONCERN_INTEREST"
+short_name = "bics_main_concern_interest"
+title = "BICS: main concern next month: interest rates"
+measure = "Proportion of responding businesses, all businesses, weighted; not permanently stopped trading"
+survey = "BICS"
+sheet = '^Business Concerns TS \(WTD\)$'
+answer = "Interest rates"
+trading_status = "Not permanently stopped trading"
+
+[[survey]]
+id = "BICS_MAIN_CONCERN_TAXATION"
+short_name = "bics_main_concern_taxation"
+title = "BICS: main concern next month: taxation"
+measure = "Proportion of responding businesses, all businesses, weighted; not permanently stopped trading"
+survey = "BICS"
+sheet = '^Business Concerns TS \(WTD\)$'
+answer = "Taxation"
+trading_status = "Not permanently stopped trading"
+
+[[survey]]
+id = "BICS_MAIN_CONCERN_WORKERS"
+short_name = "bics_main_concern_workers"
+title = "BICS: main concern next month: worker shortages"
+measure = "Proportion of responding businesses, all businesses, weighted; not permanently stopped trading"
+survey = "BICS"
+sheet = '^Business Concerns TS \(WTD\)$'
+answer = "Worker shortages"
+trading_status = "Not permanently stopped trading"
+
+[[survey]]
+id = "BICS_TRADING_FULLY"
+short_name = "bics_trading_fully"
+title = "BICS: currently fully trading"
+measure = "Proportion of responding businesses, all businesses, weighted; "
+survey = "BICS"
+sheet = '^Trading Status TS1 \(WTD\)$'
+answer = "Currently fully trading"
+
+[[survey]]
+id = "DMP_SALES_REALISED_MEAN"
+short_name = "dmp_sales_realised_mean"
+title = "DMP: mean realised sales growth, single month"
+measure = "Annual growth, %, mean across firms"
+survey = "DMP"
+sheet = "^Sales growth$"
+answer = "Single month"
+terms = ["realised"]
+
+[[survey]]
+id = "DMP_SALES_REALISED_AVG"
+short_name = "dmp_sales_realised_avg"
+title = "DMP: mean realised sales growth, quarterly average"
+measure = "Annual growth, %, mean across firms"
+survey = "DMP"
+sheet = "^Sales growth$"
+answer = "Quarterly average"
+terms = ["realised"]
+
+[[survey]]
+id = "DMP_SALES_EXPECTED_MEAN"
+short_name = "dmp_sales_expected_mean"
+title = "DMP: mean expected sales growth, single month"
+measure = "Annual growth, %, mean across firms"
+survey = "DMP"
+sheet = "^Sales growth$"
+answer = "Single month"
+terms = ["expected"]
+
+[[survey]]
+id = "DMP_SALES_EXPECTED_AVG"
+short_name = "dmp_sales_expected_avg"
+title = "DMP: mean expected sales growth, quarterly average"
+measure = "Annual growth, %, mean across firms"
+survey = "DMP"
+sheet = "^Sales growth$"
+answer = "Quarterly average"
+terms = ["expected"]
+
+[[survey]]
+id = "DMP_EMPLOYMENT_REALISED_MEAN"
+short_name = "dmp_employment_realised_mean"
+title = "DMP: mean realised employment growth, single month"
+measure = "Annual growth, %, mean across firms"
+survey = "DMP"
+sheet = "^Employment growth$"
+answer = "Single month"
+terms = ["realised"]
+
+[[survey]]
+id = "DMP_EMPLOYMENT_REALISED_AVG"
+short_name = "dmp_employment_realised_avg"
+title = "DMP: mean realised employment growth, 3 month average"
+measure = "Annual growth, %, mean across firms"
+survey = "DMP"
+sheet = "^Employment growth$"
+answer = "3 month average"
+terms = ["realised"]
+
+[[survey]]
+id = "DMP_EMPLOYMENT_EXPECTED_MEAN"
+short_name = "dmp_employment_expected_mean"
+title = "DMP: mean expected employment growth, single month"
+measure = "Annual growth, %, mean across firms"
+survey = "DMP"
+sheet = "^Employment growth$"
+answer = "Single month"
+terms = ["expected"]
+
+[[survey]]
+id = "DMP_EMPLOYMENT_EXPECTED_AVG"
+short_name = "dmp_employment_expected_avg"
+title = "DMP: mean expected employment growth, 3 month average"
+measure = "Annual growth, %, mean across firms"
+survey = "DMP"
+sheet = "^Employment growth$"
+answer = "3 month average"
+terms = ["expected"]
+
+[[survey]]
+id = "DMP_PRICE_REALISED_MEAN"
+short_name = "dmp_price_realised_mean"
+title = "DMP: mean realised price growth, single month"
+measure = "Annual growth, %, mean across firms"
+survey = "DMP"
+sheet = "^Price growth$"
+answer = "Single month"
+terms = ["realised"]
+
+[[survey]]
+id = "DMP_PRICE_REALISED_AVG"
+short_name = "dmp_price_realised_avg"
+title = "DMP: mean realised price growth, 3 month average"
+measure = "Annual growth, %, mean across firms"
+survey = "DMP"
+sheet = "^Price growth$"
+answer = "3 month average"
+terms = ["realised"]
+
+[[survey]]
+id = "DMP_PRICE_EXPECTED_MEAN"
+short_name = "dmp_price_expected_mean"
+title = "DMP: mean expected price growth, single month"
+measure = "Annual growth, %, mean across firms"
+survey = "DMP"
+sheet = "^Price growth$"
+answer = "Single month"
+terms = ["expected"]
+
+[[survey]]
+id = "DMP_PRICE_EXPECTED_AVG"
+short_name = "dmp_price_expected_avg"
+title = "DMP: mean expected price growth, 3 month average"
+measure = "Annual growth, %, mean across firms"
+survey = "DMP"
+sheet = "^Price growth$"
+answer = "3 month average"
+terms = ["expected"]
+
+[[survey]]
+id = "DMP_WAGE_REALISED_MEAN"
+short_name = "dmp_wage_realised_mean"
+title = "DMP: mean realised wage growth, single month"
+measure = "Annual growth, %, mean across firms"
+survey = "DMP"
+sheet = "^Wage growth$"
+answer = "Single month"
+terms = ["realised"]
+
+[[survey]]
+id = "DMP_WAGE_EXPECTED_MEAN"
+short_name = "dmp_wage_expected_mean"
+title = "DMP: mean expected wage growth, single month"
+measure = "Annual growth, %, mean across firms"
+survey = "DMP"
+sheet = "^Wage growth$"
+answer = "Single month"
+terms = ["expected"]
+
+[[survey]]
+id = "DMP_UNIT_COST_REALISED_MEAN"
+short_name = "dmp_unit_cost_realised_mean"
+title = "DMP: mean realised unit cost growth, single month"
+measure = "Annual growth, %, mean across firms"
+survey = "DMP"
+sheet = "^Unit cost growth$"
+answer = "Single month"
+terms = ["realised"]
+
+[[survey]]
+id = "DMP_UNIT_COST_EXPECTED_MEAN"
+short_name = "dmp_unit_cost_expected_mean"
+title = "DMP: mean expected unit cost growth, single month"
+measure = "Annual growth, %, mean across firms"
+survey = "DMP"
+sheet = "^Unit cost growth$"
+answer = "Single month"
+terms = ["expected"]
+
+[[survey]]
+id = "DMP_UNCERTAINTY_SALES"
+short_name = "dmp_uncertainty_sales"
+title = "DMP: subjective uncertainty about sales growth, single month"
+measure = "Percentage points"
+survey = "DMP"
+sheet = "^Subjective uncertainty$"
+answer = "Single month"
+terms = ["Sales growth uncertainty"]
+
+[[survey]]
+id = "DMP_UNCERTAINTY_EMPLOYMENT"
+short_name = "dmp_uncertainty_employment"
+title = "DMP: subjective uncertainty about employment growth, single month"
+measure = "Percentage points"
+survey = "DMP"
+sheet = "^Subjective uncertainty$"
+answer = "Single month"
+terms = ["Employment growth uncertainty"]
+
+[[survey]]
+id = "DMP_UNCERTAINTY_PRICE"
+short_name = "dmp_uncertainty_price"
+title = "DMP: subjective uncertainty about price growth, single month"
+measure = "Percentage points"
+survey = "DMP"
+sheet = "^Subjective uncertainty$"
+answer = "Single month"
+terms = ["Price growth uncertainty"]
+
+[[survey]]
+id = "DMP_UNCERTAINTY_WAGE"
+short_name = "dmp_uncertainty_wage"
+title = "DMP: subjective uncertainty about wage growth, single month"
+measure = "Percentage points"
+survey = "DMP"
+sheet = "^Subjective uncertainty$"
+answer = "Single month"
+terms = ["Wage growth uncertainty"]
+
+[[survey]]
+id = "DMP_UNCERTAINTY_UNIT_COST"
+short_name = "dmp_uncertainty_unit_cost"
+title = "DMP: subjective uncertainty about unit cost growth, single month"
+measure = "Percentage points"
+survey = "DMP"
+sheet = "^Subjective uncertainty$"
+answer = "Single month"
+terms = ["Unit cost growth uncertainty"]
+
+[[survey]]
+id = "DMP_OVERALL_UNCERTAINTY_HIGH"
+short_name = "dmp_overall_uncertainty_high"
+title = "DMP: share reporting high overall uncertainty"
+measure = "% of firms"
+survey = "DMP"
+sheet = "^Overall uncertainty$"
+answer = "High"
+
+[[survey]]
+id = "DMP_OVERALL_UNCERTAINTY_VERY_HIGH"
+short_name = "dmp_overall_uncertainty_very_high"
+title = "DMP: share reporting very high overall uncertainty"
+measure = "% of firms"
+survey = "DMP"
+sheet = "^Overall uncertainty$"
+answer = "Very high"
+
+[[survey]]
+id = "DMP_RECRUITMENT_MUCH_HARDER"
+short_name = "dmp_recruitment_much_harder"
+title = "DMP: recruitment much harder than normal"
+measure = "% of firms"
+survey = "DMP"
+sheet = "^Current recruitment difficulty$"
+answer = "Much harder"
+
+[[survey]]
+id = "DMP_CPI_EXP_1Y"
+short_name = "dmp_cpi_exp_1y"
+title = "DMP: CPI inflation expected one year ahead"
+measure = "%"
+survey = "DMP"
+sheet = "^CPI expectations$"
+answer = "Single month"
+terms = ["1-year ahead expectations"]
+older_answer = "1-year ahead expectations"
+
+[[survey]]
+id = "DMP_CPI_EXP_3Y"
+short_name = "dmp_cpi_exp_3y"
+title = "DMP: CPI inflation expected three years ahead"
+measure = "%"
+survey = "DMP"
+sheet = "^CPI expectations$"
+answer = "Single month"
+terms = ["3-year ahead expectations"]
+older_answer = "3-year ahead expectations"
+
+[[survey]]
+id = "AGENTS_CONSUMER_GOODS_VALUES"
+short_name = "agents_consumer_goods_values"
+title = "Agents' scores: Consumer Goods Values"
+measure = "Score, -5 to +5"
+survey = "AGENTS"
+sheet = "^agents' scores$"
+answer = "Consumer Goods Values"
+public_from = "2006-01"
+
+[[survey]]
+id = "AGENTS_CONSUMER_SERVICES_VALUES"
+short_name = "agents_consumer_services_values"
+title = "Agents' scores: Consumer Services Values"
+measure = "Score, -5 to +5"
+survey = "AGENTS"
+sheet = "^agents' scores$"
+answer = "Consumer Services Values"
+public_from = "2006-01"
+
+[[survey]]
+id = "AGENTS_BUSINESS_SERVICES_INCL_EXPORTS"
+short_name = "agents_business_services_incl_exports"
+title = "Agents' scores: Total Business Services incl. Exports (new scores)"
+measure = "Score, -5 to +5"
+survey = "AGENTS"
+sheet = "^agents' scores$"
+answer = "Total Business Services incl. Exports (new scores)"
+public_from = "2024-01"
+
+[[survey]]
+id = "AGENTS_SERVICES_EXPORTS"
+short_name = "agents_services_exports"
+title = "Agents' scores: Total Services Exports"
+measure = "Score, -5 to +5"
+survey = "AGENTS"
+sheet = "^agents' scores$"
+answer = "Total Services Exports"
+public_from = "2024-01"
+
+[[survey]]
+id = "AGENTS_MANUFACTURING_EXPORTS"
+short_name = "agents_manufacturing_exports"
+title = "Agents' scores: Volume of Manufacturing Output for Exports"
+measure = "Score, -5 to +5"
+survey = "AGENTS"
+sheet = "^agents' scores$"
+answer = "Volume of Manufacturing Output for Exports"
+public_from = "2024-01"
+
+[[survey]]
+id = "AGENTS_MANUFACTURING_INCL_EXPORTS"
+short_name = "agents_manufacturing_incl_exports"
+title = "Agents' scores: Total Manufacturing Output incl. Exports (new scores)"
+measure = "Score, -5 to +5"
+survey = "AGENTS"
+sheet = "^agents' scores$"
+answer = "Total Manufacturing Output incl. Exports (new scores)"
+public_from = "2024-01"
+
+[[survey]]
+id = "AGENTS_CONSTRUCTION_OUTPUT"
+short_name = "agents_construction_output"
+title = "Agents' scores: Volume of Construction Output"
+measure = "Score, -5 to +5"
+survey = "AGENTS"
+sheet = "^agents' scores$"
+answer = "Volume of Construction Output"
+public_from = "2024-01"
+
+[[survey]]
+id = "AGENTS_INVESTMENT_INTENTIONS"
+short_name = "agents_investment_intentions"
+title = "Agents' scores: Investment Intentions (new scores)"
+measure = "Score, -5 to +5"
+survey = "AGENTS"
+sheet = "^agents' scores$"
+answer = "Investment Intentions (new scores)"
+public_from = "2019-06"
+
+[[survey]]
+id = "AGENTS_MATERIAL_COSTS"
+short_name = "agents_material_costs"
+title = "Agents' scores: Material Costs"
+measure = "Score, -5 to +5"
+survey = "AGENTS"
+sheet = "^agents' scores$"
+answer = "Material Costs"
+public_from = "2006-01"
+
+[[survey]]
+id = "AGENTS_IMPORTED_GOODS_COSTS"
+short_name = "agents_imported_goods_costs"
+title = "Agents' scores: Costs of Imported Finished Goods"
+measure = "Score, -5 to +5"
+survey = "AGENTS"
+sheet = "^agents' scores$"
+answer = "Costs of Imported Finished Goods"
+public_from = "2006-01"
+
+[[survey]]
+id = "AGENTS_LABOUR_COSTS"
+short_name = "agents_labour_costs"
+title = "Agents' scores: Total Labour Costs per Employee (new scores)"
+measure = "Score, -5 to +5"
+survey = "AGENTS"
+sheet = "^agents' scores$"
+answer = "Total Labour Costs per Employee (new scores)"
+public_from = "2019-06"
+
+[[survey]]
+id = "AGENTS_MANUFACTURERS_PRICES"
+short_name = "agents_manufacturers_prices"
+title = "Agents' scores: Manufacturers' Domestic Prices"
+measure = "Score, -5 to +5"
+survey = "AGENTS"
+sheet = "^agents' scores$"
+answer = "Manufacturers' Domestic Prices"
+public_from = "2024-01"
+
+[[survey]]
+id = "AGENTS_CONSUMER_GOODS_PRICES"
+short_name = "agents_consumer_goods_prices"
+title = "Agents' scores: Consumer Goods Prices"
+measure = "Score, -5 to +5"
+survey = "AGENTS"
+sheet = "^agents' scores$"
+answer = "Consumer Goods Prices"
+public_from = "2006-01"
+
+[[survey]]
+id = "AGENTS_CONSUMER_SERVICES_PRICES"
+short_name = "agents_consumer_services_prices"
+title = "Agents' scores: Consumer Services Prices"
+measure = "Score, -5 to +5"
+survey = "AGENTS"
+sheet = "^agents' scores$"
+answer = "Consumer Services Prices"
+public_from = "2006-01"
+
+[[survey]]
+id = "AGENTS_B2B_SERVICES_PRICES"
+short_name = "agents_b2b_services_prices"
+title = "Agents' scores: Business to Business Services Prices"
+measure = "Score, -5 to +5"
+survey = "AGENTS"
+sheet = "^agents' scores$"
+answer = "Business to Business Services Prices"
+public_from = "2006-01"
+
+[[survey]]
+id = "AGENTS_PROFIT_MARGINS"
+short_name = "agents_profit_margins"
+title = "Agents' scores: Profit Margins (new scores)"
+measure = "Score, -5 to +5"
+survey = "AGENTS"
+sheet = "^agents' scores$"
+answer = "Profit Margins (new scores)"
+public_from = "2019-06"
+
+[[survey]]
+id = "AGENTS_RECRUITMENT_DIFFICULTIES"
+short_name = "agents_recruitment_difficulties"
+title = "Agents' scores: Recruitment Difficulties"
+measure = "Score, -5 to +5"
+survey = "AGENTS"
+sheet = "^agents' scores$"
+answer = "Recruitment Difficulties"
+public_from = "2006-01"
+
+[[survey]]
+id = "AGENTS_EMPLOYMENT_INTENTIONS"
+short_name = "agents_employment_intentions"
+title = "Agents' scores: Employment Intentions (new scores)"
+measure = "Score, -5 to +5"
+survey = "AGENTS"
+sheet = "^agents' scores$"
+answer = "Employment Intentions (new scores)"
+public_from = "2019-06"
+
+[[survey]]
+id = "AGENTS_CAPACITY_UTILISATION"
+short_name = "agents_capacity_utilisation"
+title = "Agents' scores: Current Capacity Utilisation (new scores)"
+measure = "Score, -5 to +5"
+survey = "AGENTS"
+sheet = "^agents' scores$"
+answer = "Current Capacity Utilisation (new scores)"
+public_from = "2019-06"
+
+[[survey]]
+id = "AGENTS_CREDIT_AVAILABILITY_SMALL"
+short_name = "agents_credit_availability_small"
+title = "Agents' scores: Credit availability, small businesses"
+measure = "Score, -5 to +5"
+survey = "AGENTS"
+sheet = "^agents' scores$"
+answer = "Small"
+public_from = "2006-01"
+
+[[survey]]
+id = "AGENTS_CREDIT_AVAILABILITY_MEDIUM"
+short_name = "agents_credit_availability_medium"
+title = "Agents' scores: Credit availability, medium businesses"
+measure = "Score, -5 to +5"
+survey = "AGENTS"
+sheet = "^agents' scores$"
+answer = "Medium"
+public_from = "2006-01"
+
+[[survey]]
+id = "AGENTS_CREDIT_AVAILABILITY_LARGE"
+short_name = "agents_credit_availability_large"
+title = "Agents' scores: Credit availability, large businesses"
+measure = "Score, -5 to +5"
+survey = "AGENTS"
+sheet = "^agents' scores$"
+answer = "Large"
+public_from = "2006-01"
+
+[[survey]]
+id = "AGENTS_HOUSING"
+short_name = "agents_housing"
+title = "Agents' scores: Housing (new scores)"
+measure = "Score, -5 to +5"
+survey = "AGENTS"
+sheet = "^agents' scores$"
+answer = "Housing (new scores)"
+public_from = "2024-01"
+
+[[survey]]
+id = "CCS_SECURED_AVAILABILITY_PAST3M"
+short_name = "ccs_secured_availability_past3m"
+title = "Credit Conditions Survey: How has the availability of secured credit provided to households changed? (past three months)"
+measure = "Net percentage balance"
+survey = "CCS"
+sheet = "^Secured annex|^Secured lending"
+question = "How has the availability of secured credit provided to households changed?"
+horizon = "Past three months"
+
+[[survey]]
+id = "CCS_SECURED_AVAILABILITY_NEXT3M"
+short_name = "ccs_secured_availability_next3m"
+title = "Credit Conditions Survey: How has the availability of secured credit provided to households changed? (next three months)"
+measure = "Net percentage balance"
+survey = "CCS"
+sheet = "^Secured annex|^Secured lending"
+question = "How has the availability of secured credit provided to households changed?"
+horizon = "Next three months"
+
+[[survey]]
+id = "CCS_SECURED_DEMAND_PURCHASE_PAST3M"
+short_name = "ccs_secured_demand_purchase_past3m"
+title = "Credit Conditions Survey: How has demand for secured lending for house purchase from households changed? (past three months)"
+measure = "Net percentage balance"
+survey = "CCS"
+sheet = "^Secured annex|^Secured lending"
+question = "How has demand for secured lending for house purchase from households changed?"
+horizon = "Past three months"
+
+[[survey]]
+id = "CCS_SECURED_DEMAND_PURCHASE_NEXT3M"
+short_name = "ccs_secured_demand_purchase_next3m"
+title = "Credit Conditions Survey: How has demand for secured lending for house purchase from households changed? (next three months)"
+measure = "Net percentage balance"
+survey = "CCS"
+sheet = "^Secured annex|^Secured lending"
+question = "How has demand for secured lending for house purchase from households changed?"
+horizon = "Next three months"
+
+[[survey]]
+id = "CCS_SECURED_DEMAND_REMORTGAGE_PAST3M"
+short_name = "ccs_secured_demand_remortgage_past3m"
+title = "Credit Conditions Survey: How has demand for secured lending for remortgaging from households changed? (past three months)"
+measure = "Net percentage balance"
+survey = "CCS"
+sheet = "^Secured annex|^Secured lending"
+question = "How has demand for secured lending for remortgaging from households changed?"
+horizon = "Past three months"
+
+[[survey]]
+id = "CCS_SECURED_DEMAND_REMORTGAGE_NEXT3M"
+short_name = "ccs_secured_demand_remortgage_next3m"
+title = "Credit Conditions Survey: How has demand for secured lending for remortgaging from households changed? (next three months)"
+measure = "Net percentage balance"
+survey = "CCS"
+sheet = "^Secured annex|^Secured lending"
+question = "How has demand for secured lending for remortgaging from households changed?"
+horizon = "Next three months"
+
+[[survey]]
+id = "CCS_SECURED_SPREADS_PAST3M"
+short_name = "ccs_secured_spreads_past3m"
+title = "Credit Conditions Survey: How have overall secured lending spreads changed? (past three months)"
+measure = "Net percentage balance"
+survey = "CCS"
+sheet = "^Secured annex|^Secured lending"
+question = "How have overall secured lending spreads changed?"
+horizon = "Past three months"
+
+[[survey]]
+id = "CCS_SECURED_SPREADS_NEXT3M"
+short_name = "ccs_secured_spreads_next3m"
+title = "Credit Conditions Survey: How have overall secured lending spreads changed? (next three months)"
+measure = "Net percentage balance"
+survey = "CCS"
+sheet = "^Secured annex|^Secured lending"
+question = "How have overall secured lending spreads changed?"
+horizon = "Next three months"
+
+[[survey]]
+id = "CCS_SECURED_DEFAULT_PAST3M"
+short_name = "ccs_secured_default_past3m"
+title = "Credit Conditions Survey: How has the default rate on secured loans to households changed? (past three months)"
+measure = "Net percentage balance"
+survey = "CCS"
+sheet = "^Secured annex|^Secured lending"
+question = "How has the default rate on secured loans to households changed?"
+horizon = "Past three months"
+
+[[survey]]
+id = "CCS_SECURED_DEFAULT_NEXT3M"
+short_name = "ccs_secured_default_next3m"
+title = "Credit Conditions Survey: How has the default rate on secured loans to households changed? (next three months)"
+measure = "Net percentage balance"
+survey = "CCS"
+sheet = "^Secured annex|^Secured lending"
+question = "How has the default rate on secured loans to households changed?"
+horizon = "Next three months"
+
+[[survey]]
+id = "CCS_UNSECURED_AVAILABILITY_PAST3M"
+short_name = "ccs_unsecured_availability_past3m"
+title = "Credit Conditions Survey: How has the availability of unsecured credit provided to households changed? (past three months)"
+measure = "Net percentage balance"
+survey = "CCS"
+sheet = "^Unsecured annex|^Unsecured lending"
+question = "How has the availability of unsecured credit provided to households changed?"
+horizon = "Past three months"
+
+[[survey]]
+id = "CCS_UNSECURED_AVAILABILITY_NEXT3M"
+short_name = "ccs_unsecured_availability_next3m"
+title = "Credit Conditions Survey: How has the availability of unsecured credit provided to households changed? (next three months)"
+measure = "Net percentage balance"
+survey = "CCS"
+sheet = "^Unsecured annex|^Unsecured lending"
+question = "How has the availability of unsecured credit provided to households changed?"
+horizon = "Next three months"
+
+[[survey]]
+id = "CCS_UNSECURED_DEMAND_PAST3M"
+short_name = "ccs_unsecured_demand_past3m"
+title = "Credit Conditions Survey: How has demand for total unsecured lending from households changed? (past three months)"
+measure = "Net percentage balance"
+survey = "CCS"
+sheet = "^Unsecured annex|^Unsecured lending"
+question = "How has demand for total unsecured lending from households changed?"
+horizon = "Past three months"
+
+[[survey]]
+id = "CCS_UNSECURED_DEMAND_NEXT3M"
+short_name = "ccs_unsecured_demand_next3m"
+title = "Credit Conditions Survey: How has demand for total unsecured lending from households changed? (next three months)"
+measure = "Net percentage balance"
+survey = "CCS"
+sheet = "^Unsecured annex|^Unsecured lending"
+question = "How has demand for total unsecured lending from households changed?"
+horizon = "Next three months"
+
+[[survey]]
+id = "CCS_UNSECURED_SPREADS_PAST3M"
+short_name = "ccs_unsecured_spreads_past3m"
+title = "Credit Conditions Survey: How have overall unsecured lending spreads changed? (past three months)"
+measure = "Net percentage balance"
+survey = "CCS"
+sheet = "^Unsecured annex|^Unsecured lending"
+question = "How have overall unsecured lending spreads changed?"
+horizon = "Past three months"
+
+[[survey]]
+id = "CCS_UNSECURED_SPREADS_NEXT3M"
+short_name = "ccs_unsecured_spreads_next3m"
+title = "Credit Conditions Survey: How have overall unsecured lending spreads changed? (next three months)"
+measure = "Net percentage balance"
+survey = "CCS"
+sheet = "^Unsecured annex|^Unsecured lending"
+question = "How have overall unsecured lending spreads changed?"
+horizon = "Next three months"
+
+[[survey]]
+id = "CCS_UNSECURED_DEFAULT_PAST3M"
+short_name = "ccs_unsecured_default_past3m"
+title = "Credit Conditions Survey: How has the default rate on total unsecured loans to households changed? (past three months)"
+measure = "Net percentage balance"
+survey = "CCS"
+sheet = "^Unsecured annex|^Unsecured lending"
+question = "How has the default rate on total unsecured loans to households changed?"
+horizon = "Past three months"
+
+[[survey]]
+id = "CCS_UNSECURED_DEFAULT_NEXT3M"
+short_name = "ccs_unsecured_default_next3m"
+title = "Credit Conditions Survey: How has the default rate on total unsecured loans to households changed? (next three months)"
+measure = "Net percentage balance"
+survey = "CCS"
+sheet = "^Unsecured annex|^Unsecured lending"
+question = "How has the default rate on total unsecured loans to households changed?"
+horizon = "Next three months"
+
+[[survey]]
+id = "CCS_CORP_AVAILABILITY_PAST3M"
+short_name = "ccs_corp_availability_past3m"
+title = "Credit Conditions Survey: How has the availability of credit provided to the corporate sector overall changed? (past three months)"
+measure = "Net percentage balance"
+survey = "CCS"
+sheet = "^Corporate annex|^Corporate lending"
+question = "How has the availability of credit provided to the corporate sector overall changed?"
+horizon = "Past three months"
+
+[[survey]]
+id = "CCS_CORP_AVAILABILITY_NEXT3M"
+short_name = "ccs_corp_availability_next3m"
+title = "Credit Conditions Survey: How has the availability of credit provided to the corporate sector overall changed? (next three months)"
+measure = "Net percentage balance"
+survey = "CCS"
+sheet = "^Corporate annex|^Corporate lending"
+question = "How has the availability of credit provided to the corporate sector overall changed?"
+horizon = "Next three months"
+
+[[survey]]
+id = "CCS_CORP_AVAILABILITY_SMALL_PAST3M"
+short_name = "ccs_corp_availability_small_past3m"
+title = "Credit Conditions Survey: How has the availability of credit provided to small businesses changed? (past three months)"
+measure = "Net percentage balance"
+survey = "CCS"
+sheet = "^Corporate annex|^Corporate lending"
+question = "How has the availability of credit provided to small businesses changed?"
+horizon = "Past three months"
+
+[[survey]]
+id = "CCS_CORP_AVAILABILITY_SMALL_NEXT3M"
+short_name = "ccs_corp_availability_small_next3m"
+title = "Credit Conditions Survey: How has the availability of credit provided to small businesses changed? (next three months)"
+measure = "Net percentage balance"
+survey = "CCS"
+sheet = "^Corporate annex|^Corporate lending"
+question = "How has the availability of credit provided to small businesses changed?"
+horizon = "Next three months"
+
+[[survey]]
+id = "CCS_CORP_AVAILABILITY_MEDIUM_PAST3M"
+short_name = "ccs_corp_availability_medium_past3m"
+title = "Credit Conditions Survey: How has the availability of credit provided to medium PNFCs changed? (past three months)"
+measure = "Net percentage balance"
+survey = "CCS"
+sheet = "^Corporate annex|^Corporate lending"
+question = "How has the availability of credit provided to medium PNFCs changed?"
+horizon = "Past three months"
+
+[[survey]]
+id = "CCS_CORP_AVAILABILITY_MEDIUM_NEXT3M"
+short_name = "ccs_corp_availability_medium_next3m"
+title = "Credit Conditions Survey: How has the availability of credit provided to medium PNFCs changed? (next three months)"
+measure = "Net percentage balance"
+survey = "CCS"
+sheet = "^Corporate annex|^Corporate lending"
+question = "How has the availability of credit provided to medium PNFCs changed?"
+horizon = "Next three months"
+
+[[survey]]
+id = "CCS_CORP_AVAILABILITY_LARGE_PAST3M"
+short_name = "ccs_corp_availability_large_past3m"
+title = "Credit Conditions Survey: How has the availability of credit provided to large PNFCs changed? (past three months)"
+measure = "Net percentage balance"
+survey = "CCS"
+sheet = "^Corporate annex|^Corporate lending"
+question = "How has the availability of credit provided to large PNFCs changed?"
+horizon = "Past three months"
+
+[[survey]]
+id = "CCS_CORP_AVAILABILITY_LARGE_NEXT3M"
+short_name = "ccs_corp_availability_large_next3m"
+title = "Credit Conditions Survey: How has the availability of credit provided to large PNFCs changed? (next three months)"
+measure = "Net percentage balance"
+survey = "CCS"
+sheet = "^Corporate annex|^Corporate lending"
+question = "How has the availability of credit provided to large PNFCs changed?"
+horizon = "Next three months"
+
+[[survey]]
+id = "CCS_CORP_DEMAND_SMALL_PAST3M"
+short_name = "ccs_corp_demand_small_past3m"
+title = "Credit Conditions Survey: How has overall demand for lending from small businesses changed? (past three months)"
+measure = "Net percentage balance"
+survey = "CCS"
+sheet = "^Corporate annex|^Corporate lending"
+question = "How has overall demand for lending from small businesses changed?"
+horizon = "Past three months"
+
+[[survey]]
+id = "CCS_CORP_DEMAND_SMALL_NEXT3M"
+short_name = "ccs_corp_demand_small_next3m"
+title = "Credit Conditions Survey: How has overall demand for lending from small businesses changed? (next three months)"
+measure = "Net percentage balance"
+survey = "CCS"
+sheet = "^Corporate annex|^Corporate lending"
+question = "How has overall demand for lending from small businesses changed?"
+horizon = "Next three months"
+
+[[survey]]
+id = "CCS_CORP_DEMAND_MEDIUM_PAST3M"
+short_name = "ccs_corp_demand_medium_past3m"
+title = "Credit Conditions Survey: How has demand for lending from medium PNFCs changed? (past three months)"
+measure = "Net percentage balance"
+survey = "CCS"
+sheet = "^Corporate annex|^Corporate lending"
+question = "How has demand for lending from medium PNFCs changed?"
+horizon = "Past three months"
+
+[[survey]]
+id = "CCS_CORP_DEMAND_MEDIUM_NEXT3M"
+short_name = "ccs_corp_demand_medium_next3m"
+title = "Credit Conditions Survey: How has demand for lending from medium PNFCs changed? (next three months)"
+measure = "Net percentage balance"
+survey = "CCS"
+sheet = "^Corporate annex|^Corporate lending"
+question = "How has demand for lending from medium PNFCs changed?"
+horizon = "Next three months"
+
+[[survey]]
+id = "CCS_CORP_DEMAND_LARGE_PAST3M"
+short_name = "ccs_corp_demand_large_past3m"
+title = "Credit Conditions Survey: How has demand for lending from large PNFCs changed? (past three months)"
+measure = "Net percentage balance"
+survey = "CCS"
+sheet = "^Corporate annex|^Corporate lending"
+question = "How has demand for lending from large PNFCs changed?"
+horizon = "Past three months"
+
+[[survey]]
+id = "CCS_CORP_DEMAND_LARGE_NEXT3M"
+short_name = "ccs_corp_demand_large_next3m"
+title = "Credit Conditions Survey: How has demand for lending from large PNFCs changed? (next three months)"
+measure = "Net percentage balance"
+survey = "CCS"
+sheet = "^Corporate annex|^Corporate lending"
+question = "How has demand for lending from large PNFCs changed?"
+horizon = "Next three months"
+
+[[survey]]
+id = "CCS_CORP_DEFAULT_SMALL_PAST3M"
+short_name = "ccs_corp_default_small_past3m"
+title = "Credit Conditions Survey: How has the default rate on loans to small businesses changed? (past three months)"
+measure = "Net percentage balance"
+survey = "CCS"
+sheet = "^Corporate annex|^Corporate lending"
+question = "How has the default rate on loans to small businesses changed?"
+horizon = "Past three months"
+
+[[survey]]
+id = "CCS_CORP_DEFAULT_SMALL_NEXT3M"
+short_name = "ccs_corp_default_small_next3m"
+title = "Credit Conditions Survey: How has the default rate on loans to small businesses changed? (next three months)"
+measure = "Net percentage balance"
+survey = "CCS"
+sheet = "^Corporate annex|^Corporate lending"
+question = "How has the default rate on loans to small businesses changed?"
+horizon = "Next three months"
+
+[[survey]]
+id = "CCS_CORP_DEFAULT_MEDIUM_PAST3M"
+short_name = "ccs_corp_default_medium_past3m"
+title = "Credit Conditions Survey: How has the default rate on loans to medium PNFCs changed? (past three months)"
+measure = "Net percentage balance"
+survey = "CCS"
+sheet = "^Corporate annex|^Corporate lending"
+question = "How has the default rate on loans to medium PNFCs changed?"
+horizon = "Past three months"
+
+[[survey]]
+id = "CCS_CORP_DEFAULT_MEDIUM_NEXT3M"
+short_name = "ccs_corp_default_medium_next3m"
+title = "Credit Conditions Survey: How has the default rate on loans to medium PNFCs changed? (next three months)"
+measure = "Net percentage balance"
+survey = "CCS"
+sheet = "^Corporate annex|^Corporate lending"
+question = "How has the default rate on loans to medium PNFCs changed?"
+horizon = "Next three months"
+
+[[survey]]
+id = "CCS_CORP_DEFAULT_LARGE_PAST3M"
+short_name = "ccs_corp_default_large_past3m"
+title = "Credit Conditions Survey: How has the default rate on loans to large PNFCs changed? (past three months)"
+measure = "Net percentage balance"
+survey = "CCS"
+sheet = "^Corporate annex|^Corporate lending"
+question = "How has the default rate on loans to large PNFCs changed?"
+horizon = "Past three months"
+
+[[survey]]
+id = "CCS_CORP_DEFAULT_LARGE_NEXT3M"
+short_name = "ccs_corp_default_large_next3m"
+title = "Credit Conditions Survey: How has the default rate on loans to large PNFCs changed? (next three months)"
+measure = "Net percentage balance"
+survey = "CCS"
+sheet = "^Corporate annex|^Corporate lending"
+question = "How has the default rate on loans to large PNFCs changed?"
+horizon = "Next three months"
+
+[[survey]]
+id = "BICS_DOMESTIC_DEMAND_NOT_STOPPED_INCREASED"
+short_name = "bics_domestic_demand_not_stopped_increased"
+title = "BICS: domestic demand compared with the previous month: demand increased"
+measure = "Proportion of responding businesses, all businesses, weighted; not permanently stopped trading"
+survey = "BICS"
+sheet = '^Domestic Demand TS \(WTD\)$'
+answer = "Demand increased"
+trading_status = "Not permanently stopped trading"
+
+[[survey]]
+id = "BICS_DOMESTIC_DEMAND_NOT_STOPPED_DECREASED"
+short_name = "bics_domestic_demand_not_stopped_decreased"
+title = "BICS: domestic demand compared with the previous month: demand decreased"
+measure = "Proportion of responding businesses, all businesses, weighted; not permanently stopped trading"
+survey = "BICS"
+sheet = '^Domestic Demand TS \(WTD\)$'
+answer = "Demand decreased"
+trading_status = "Not permanently stopped trading"
+
+[[survey]]
+id = "BICS_INTERNATIONAL_DEMAND_NOT_STOPPED_INCREASED"
+short_name = "bics_international_demand_not_stopped_increased"
+title = "BICS: international demand compared with the previous month: demand increased"
+measure = "Proportion of responding businesses, all businesses, weighted; not permanently stopped trading"
+survey = "BICS"
+sheet = '^International Demand TS \(WTD\)$'
+answer = "Demand increased"
+trading_status = "Not permanently stopped trading"
+
+[[survey]]
+id = "BICS_INTERNATIONAL_DEMAND_NOT_STOPPED_DECREASED"
+short_name = "bics_international_demand_not_stopped_decreased"
+title = "BICS: international demand compared with the previous month: demand decreased"
+measure = "Proportion of responding businesses, all businesses, weighted; not permanently stopped trading"
+survey = "BICS"
+sheet = '^International Demand TS \(WTD\)$'
+answer = "Demand decreased"
+trading_status = "Not permanently stopped trading"

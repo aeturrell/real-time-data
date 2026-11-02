@@ -15,7 +15,7 @@ def coverage_report(archive: pd.DataFrame) -> pd.DataFrame:
         One row per series with vintage counts, date ranges, the share of
         vintages dated to the day, the usual (median) and longest gaps between
         vintages, when the longest gap ended, whether it is more than three
-        times the usual gap, and the sources used.
+        times the usual gap, and the routes used.
     """
     rows = [
         _series_summary(series_id, group)
@@ -56,5 +56,5 @@ def _series_summary(series_id: str, group: pd.DataFrame) -> dict[str, object]:
         "longest_gap_days": longest_gap,
         "longest_gap_ends": longest_gap_ends,
         "unusual_gap": longest_gap > GAP_TOLERANCE * usual_gap,
-        "sources": ", ".join(sorted(group["source"].astype(str).unique())),
+        "routes": ", ".join(sorted(group["route"].astype(str).unique())),
     }

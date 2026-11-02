@@ -36,7 +36,7 @@ from realtime.sources.dataset_files import (
 )
 from realtime.store import collapse_to_changes
 
-SOURCE_NAME = "triangle"
+ROUTE_NAME = "triangle"
 HEADER_PATTERN = re.compile(
     r"^(relating to period|time period row|index$)", re.IGNORECASE
 )
@@ -95,10 +95,10 @@ class TriangleSource:
     """Collects each configured revisions triangle, from its newest and past files.
 
     Attributes:
-        name: The source code written to the "source" column.
+        name: The source code written to the "route" column.
     """
 
-    name = SOURCE_NAME
+    name = ROUTE_NAME
 
     def __init__(self, specs: tuple[TriangleSpec, ...], cache: DownloadCache) -> None:
         """Sets up the source.
@@ -413,5 +413,5 @@ def _to_archive_rows(
         frequency=spec.frequency,
         reference_period_basis=spec.basis,
         vintage_date_precision="month",
-        **provenance_columns(SOURCE_NAME, cached),
+        **provenance_columns(ROUTE_NAME, cached),
     )

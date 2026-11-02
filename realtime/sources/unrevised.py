@@ -27,7 +27,7 @@ from realtime.sources.series_json import (
     observations_from_document,
 )
 
-SOURCE_NAME = "unrevised"
+ROUTE_NAME = "unrevised"
 PRECISION = "upper_bound"
 PUBLICATION_LAG_MONTHS = 1
 
@@ -36,10 +36,10 @@ class UnrevisedSource:
     """Back-fills first publications for series marked as never revised.
 
     Attributes:
-        name: The source code written to the "source" column.
+        name: The source code written to the "route" column.
     """
 
-    name = SOURCE_NAME
+    name = ROUTE_NAME
 
     def __init__(self, specs: tuple[SeriesSpec, ...], cache: DownloadCache) -> None:
         """Sets up the source.
@@ -81,7 +81,7 @@ class UnrevisedSource:
         )
         placeholder = Vintage("current", pd.Timestamp.now().normalize(), PRECISION)
         rows = observations_from_document(
-            document, cached, placeholder, spec, source=SOURCE_NAME
+            document, cached, placeholder, spec, route=ROUTE_NAME
         )
         periods = rows["reference_period"].map(pd.Period)
         rows = rows.assign(vintage_date=periods.map(latest_publication_date))

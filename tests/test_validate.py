@@ -4,7 +4,7 @@ from realtime.validate import late_first_appearances, mixed_basis_summary
 
 
 def row(
-    period: str, vintage: str, source: str = "series_json", basis: str = "period"
+    period: str, vintage: str, route: str = "series_json", basis: str = "period"
 ) -> dict:
     return {
         "series_id": "MGSX",
@@ -12,7 +12,7 @@ def row(
         "reference_period": period,
         "reference_period_basis": basis,
         "vintage_date": pd.Timestamp(vintage),
-        "source": source,
+        "route": route,
         "value": 1.0,
     }
 
@@ -20,13 +20,13 @@ def row(
 def test_late_first_appearances_finds_releases_a_source_had_earlier() -> None:
     observations = pd.DataFrame(
         [
-            row("2015Q2", "2015-07-31", source="triangle"),
+            row("2015Q2", "2015-07-31", route="triangle"),
             row("2015Q2", "2015-09-30"),
-            row("1990Q1", "2015-05-31", source="triangle"),
+            row("1990Q1", "2015-05-31", route="triangle"),
             row("1990Q1", "2016-02-25"),
         ]
     )
-    changes = observations.loc[observations["source"] == "series_json"]
+    changes = observations.loc[observations["route"] == "series_json"]
     late = late_first_appearances(observations, changes)
     assert late["reference_period"].tolist() == ["2015Q2"]
     assert late["days_late"].tolist() == [61]

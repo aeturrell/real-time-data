@@ -20,6 +20,7 @@ from realtime.settings import CACHE_DIR
 MANIFEST_FILE_NAME = "manifest.jsonl"
 FILES_DIR_NAME = "files"
 HASH_PREFIX_LENGTH = 2
+WORKBOOK_SIGNATURES = (b"PK\x03\x04", b"\xd0\xcf\x11\xe0")
 
 
 class CacheMissError(DownloadError):
@@ -200,6 +201,19 @@ class DownloadCache:
             The path where the file is (or would be) stored.
         """
         return self._files_dir / sha256[:HASH_PREFIX_LENGTH] / sha256
+
+
+def check_is_workbook(content: bytes) -> None:
+    """Checks that downloaded content is a spreadsheet, not an error page.
+
+    Args:
+        content: The downloaded bytes.
+
+    Raises:
+        ValueError: If the content does not begin like an Excel file.
+    """
+    if not content.startswith(WORKBOOK_SIGNATURES):
+        raise ValueError("not an Excel file")
 
 
 def _check_is_json(content: bytes) -> None:

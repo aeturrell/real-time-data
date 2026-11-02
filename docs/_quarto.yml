@@ -10,7 +10,7 @@ website:
   title: "UK REAL-TIME DATA"
   favicon: assets/favicon.svg
   page-footer:
-    left: "Source: Office for National Statistics."
+    left: "Sources: Office for National Statistics and Bank of England."
   navbar:
     left:
       - text: Home

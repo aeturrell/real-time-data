@@ -1,4 +1,4 @@
-"""A real-time (vintage) archive of UK macroeconomic data from the ONS."""
+"""A real-time (vintage) archive of UK economic data."""
 
 from realtime.store import (
     as_of,

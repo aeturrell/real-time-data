@@ -16,6 +16,7 @@ CATEGORY_COLUMNS = [
     "vintage_date_precision",
     "release_type",
     "source",
+    "route",
     "source_url",
     "content_sha256",
 ]
@@ -34,13 +35,15 @@ COLUMNS = [
     "release_type",
     "value",
     "source",
+    "route",
     "source_url",
     "retrieved_at",
     "content_sha256",
 ]
 
-FREQUENCIES = frozenset({"A", "Q", "M"})
-PERIOD_BASES = frozenset({"period", "3m_ending"})
+FREQUENCIES = frozenset({"A", "Q", "M", "D"})
+SURVEY_BASIS = "survey"
+PERIOD_BASES = frozenset({"period", "3m_ending", SURVEY_BASIS})
 VINTAGE_PRECISIONS = frozenset({"day", "month", "upper_bound"})
 RELEASE_TYPES = frozenset({"first", "revision", "history"})
 

@@ -134,7 +134,7 @@ def parse_arguments(argv: list[str] | None = None) -> argparse.Namespace:
         The parsed arguments.
     """
     parser = argparse.ArgumentParser(
-        prog="realtime", description="Build a real-time archive of ONS data."
+        prog="realtime", description="Build a real-time archive of UK economic data."
     )
     parser.add_argument("--verbose", action="store_true", help="show debug messages")
     commands = parser.add_subparsers(dest="command", required=True)

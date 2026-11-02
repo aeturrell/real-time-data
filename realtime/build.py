@@ -6,7 +6,11 @@ from loguru import logger
 from realtime.cache import DownloadCache
 from realtime.config import ArchiveConfig
 from realtime.settings import LATE_FIRST_APPEARANCES_PATH
-from realtime.sources.base import SOURCE_PRIORITY, Source
+from realtime.sources.agents import AgentsSource
+from realtime.sources.base import ROUTE_PRIORITY, Source
+from realtime.sources.bics import BicsSource
+from realtime.sources.credit_conditions import CreditConditionsSource
+from realtime.sources.dmp import DecisionMakerPanelSource
 from realtime.sources.realtime_db import RealtimeDbSource
 from realtime.sources.series_json import SeriesJsonSource
 from realtime.sources.triangle import TriangleSource
@@ -27,6 +31,14 @@ SOURCE_TYPES = {
     RealtimeDbSource.name: lambda config, cache: RealtimeDbSource(
         config.realtime_dbs, cache
     ),
+    BicsSource.name: lambda config, cache: BicsSource(config.surveys, cache),
+    DecisionMakerPanelSource.name: lambda config, cache: DecisionMakerPanelSource(
+        config.surveys, cache
+    ),
+    CreditConditionsSource.name: lambda config, cache: CreditConditionsSource(
+        config.surveys, cache
+    ),
+    AgentsSource.name: lambda config, cache: AgentsSource(config.surveys, cache),
 }
 NOT_PRIMARY_PENALTY = 1
 RANK_STEP = 2
@@ -109,8 +121,8 @@ def add_rank(
 ) -> pd.DataFrame:
     """Ranks each row by how much its source is trusted (lower is better).
 
-    "_source_rank" ranks the source type by SOURCE_PRIORITY. "_rank" refines it:
-    within a source type, a series' primary dataset beats its other datasets.
+    "_source_rank" ranks the route by ROUTE_PRIORITY. "_rank" refines it:
+    within a route, a series' primary dataset beats its other datasets.
 
     Args:
         observations: Rows from every source.
@@ -119,7 +131,7 @@ def add_rank(
     Returns:
         The rows with "_source_rank" and "_rank" columns.
     """
-    source_rank = observations["source"].astype(str).map(SOURCE_PRIORITY)
+    source_rank = observations["route"].astype(str).map(ROUTE_PRIORITY)
     primary = observations["series_id"].astype(str).map(primary_datasets)
     is_primary = observations["dataset_id"].astype(str) == primary
     penalty = (~is_primary).astype(int) * NOT_PRIMARY_PENALTY

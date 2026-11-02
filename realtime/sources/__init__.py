@@ -1,1 +1,1 @@
-"""Data sources: each turns one kind of ONS publication into archive rows."""
+"""Data sources: each turns one kind of publication into archive rows."""

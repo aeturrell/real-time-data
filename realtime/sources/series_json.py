@@ -20,7 +20,7 @@ from realtime.settings import ONS_BASE_URL, ONS_SEARCH_API_URL
 from realtime.sources.base import provenance_columns
 from realtime.store import collapse_to_changes
 
-SOURCE_NAME = "series_json"
+ROUTE_NAME = "series_json"
 SEARCH_RESULT_LIMIT = 50
 OBSERVATION_GROUPS = {"years": "A", "quarters": "Q", "months": "M"}
 ONE_MONTH = 1
@@ -32,10 +32,10 @@ class SeriesJsonSource:
     """Collects every past version of every ONS page for a list of series.
 
     Attributes:
-        name: The source code written to the "source" column.
+        name: The source code written to the "route" column.
     """
 
-    name = SOURCE_NAME
+    name = ROUTE_NAME
 
     def __init__(self, specs: tuple[SeriesSpec, ...], cache: DownloadCache) -> None:
         """Sets up the source.
@@ -147,7 +147,7 @@ def observations_from_document(
     cached: CachedFile,
     vintage: Vintage,
     spec: SeriesSpec,
-    source: str = SOURCE_NAME,
+    route: str = ROUTE_NAME,
 ) -> pd.DataFrame:
     """Turns one version of a time-series page into rows of the archive.
 
@@ -156,7 +156,7 @@ def observations_from_document(
         cached: The cached file the JSON came from.
         vintage: The vintage date given to this version.
         spec: The series.
-        source: The source code to record.
+        route: The route code to record.
 
     Returns:
         One row per published observation, with reference periods as strings.
@@ -196,7 +196,7 @@ def observations_from_document(
         measure=spec.measure,
         vintage_date=vintage.vintage_date,
         vintage_date_precision=vintage.precision,
-        **provenance_columns(source, cached),
+        **provenance_columns(route, cached),
     )
 
 

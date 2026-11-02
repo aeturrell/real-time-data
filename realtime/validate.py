@@ -4,6 +4,8 @@ The checks are:
 
 - No look-ahead: a value can never have been published on or before the last day
   of the period it describes, so any such row points to a wrongly dated vintage.
+  Survey results are exempt (basis "survey"): their period is when the survey
+  ran, and they are often published before that month or quarter ends.
 - One basis per series: a monthly series' figures are either single months or
   rolling three-month windows, never a mix.
 - No late first releases: a period should first appear in the archive no later
@@ -19,6 +21,7 @@ The checks are:
 
 import pandas as pd
 
+from realtime.schema import SURVEY_BASIS
 from realtime.store import HISTORY_AFTER, period_ends, revision_triangle
 
 GROWTH_PAIRS = {
@@ -52,11 +55,12 @@ def look_ahead_summary(archive: pd.DataFrame) -> pd.DataFrame:
     period_ends = archive["reference_period"].map(
         lambda period: period.end_time.normalize()
     )
-    early = archive.loc[archive["vintage_date"] <= period_ends]
+    is_survey = archive["reference_period_basis"] == SURVEY_BASIS
+    early = archive.loc[(archive["vintage_date"] <= period_ends) & ~is_survey]
     if early.empty:
-        return pd.DataFrame(columns=["series_id", "source", "rows", "example"])
+        return pd.DataFrame(columns=["series_id", "route", "rows", "example"])
     return (
-        early.groupby(["series_id", "source"], observed=True)
+        early.groupby(["series_id", "route"], observed=True)
         .apply(
             lambda rows: pd.Series(
                 {
@@ -114,7 +118,7 @@ def late_first_appearances(
     earliest = (
         observations.sort_values("vintage_date")
         .drop_duplicates(SERIES_PERIOD)
-        .set_index(SERIES_PERIOD)[["vintage_date", "source"]]
+        .set_index(SERIES_PERIOD)[["vintage_date", "route"]]
         .rename(columns={"vintage_date": "earliest_in_source"})
         .join(in_archive.rename("in_archive"), how="inner")
         .reset_index()

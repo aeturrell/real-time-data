@@ -40,7 +40,7 @@ from realtime.sources.dataset_files import (
 )
 from realtime.store import collapse_to_changes
 
-SOURCE_NAME = "realtime_db"
+ROUTE_NAME = "realtime_db"
 FREQUENCY = "Q"
 MAX_HEADER_ROWS = 20
 MAX_LABEL_COLUMNS = 3
@@ -67,10 +67,10 @@ class RealtimeDbSource:
     """Collects every vintage held in each configured ONS real-time database.
 
     Attributes:
-        name: The source code written to the "source" column.
+        name: The source code written to the "route" column.
     """
 
-    name = SOURCE_NAME
+    name = ROUTE_NAME
 
     def __init__(self, specs: tuple[RealtimeDbSpec, ...], cache: DownloadCache) -> None:
         """Sets up the source.
@@ -399,5 +399,5 @@ def _to_archive_rows(
         frequency=FREQUENCY,
         reference_period_basis="period",
         vintage_date_precision="month",
-        **provenance_columns(SOURCE_NAME, cached),
+        **provenance_columns(ROUTE_NAME, cached),
     )

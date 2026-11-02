@@ -4,7 +4,7 @@ This plan sets out how to grow the archive from 18 series to about 50 headline U
 
 Terms used throughout:
 
-- **Vintage date**: the date a value was published by ONS (a calendar day).
+- **Vintage date**: the date a value was published (a calendar day).
 - **Reference period**: the period a value describes, for example 2024 Q1 or March 2024. It is stored as a proper period, not a timestamp.
 - **Change-only storage**: a row is kept only when a value for a series and reference period is first published, or when a later release changes it. This is how ALFRED stores data. Any past vintage can be rebuilt from these rows.
 - **CDID**: the four-character ONS code that identifies a single time series, for example `ABMI` for GDP.

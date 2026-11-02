@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 
-This repo aims to pull out as many real-time datasets (and their revision triangles) as possible from the Office for National Statistics (ONS) website and put them into a single, consistent (tidy) format in a parquet file that is generated in scratch/ when the code is run. We always track when and how we got the data. Data downloads are always designed to be deterministic and repeatable so that i) the archive can be re-assembled from a pure code run at any time, and ii) new data can be added to the archive at any time.
+This repo aims to pull out as many real-time datasets (and their revision triangles) as possible for the UK, from publishers including the Office for National Statistics (ONS) and the Bank of England, and put them into a single, consistent (tidy) format in a parquet file that is generated in scratch/ when the code is run. We always track when and how we got the data. Data downloads are always designed to be deterministic and repeatable so that i) the archive can be re-assembled from a pure code run at any time, and ii) new data can be added to the archive at any time.
 
 The eventual goal is to develop a complete real-time dataset a la ALFRED.
 
