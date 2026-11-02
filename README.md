@@ -194,7 +194,7 @@ To release a new version:
    uv run realtime benchmark
    ```
 
-2. Raise the version number, which also updates `uv.lock`:
+2. Raise the version number with this command, not by editing `pyproject.toml` by hand. It also updates `uv.lock`, and CI and the deployment both fail if the two files disagree:
 
    ```bash
    uv version --bump minor
@@ -203,6 +203,10 @@ To release a new version:
 3. Merge these changes into `main` through a pull request.
 
 When a merge into `main` changes the version in `pyproject.toml`, the `Deploy docs` workflow builds the site and publishes it to GitHub Pages. Other merges into `main` publish nothing. You can also run the workflow by hand from the repository's Actions tab, which publishes the branch you choose.
+
+If a deployment fails after the version has been raised, merging a fix will not start it again unless that merge also changes `pyproject.toml`. Once the fix is on `main`, open `Deploy docs` in the Actions tab and choose **Run workflow** on `main`.
+
+If the error says that `uv.lock` needs to be updated, run `uv lock` and merge the change.
 
 GitHub Pages must be set up once for this to work: in the repository's settings, under Pages, set the source to GitHub Actions.
 
