@@ -76,6 +76,8 @@ Economic statistics change after they are first published. This project collects
 
 > WARNING: This project has been largely vibe-coded. Use with caution.
 
+[![DOI](https://zenodo.org/badge/427734171.svg)](https://doi.org/10.5281/zenodo.23900406)
+
 ::: {.button-row}
 [Read the guide to the data](guide.qmd)
 :::
