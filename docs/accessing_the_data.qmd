@@ -53,7 +53,7 @@ The example query below asks for every value of UK GDP growth in the second quar
 
 ```sql
 SELECT vintage_date::DATE AS published, value
-FROM 'https://aeturrell.github.io/real-time-data/realtimedata.parquet'
+FROM 'https://raw.githubusercontent.com/aeturrell/real-time-data/realtimedata.parquet'
 WHERE series_id = 'IHYQ' AND reference_period = '2020Q2'
 ORDER BY vintage_date
 ```
@@ -66,7 +66,7 @@ SELECT
     any_value(title) AS title,
     min(vintage_date)::DATE AS first_published,
     max(vintage_date)::DATE AS latest_published
-FROM 'https://aeturrell.github.io/real-time-data/realtimedata.parquet'
+FROM 'https://raw.githubusercontent.com/aeturrell/real-time-data/realtimedata.parquet'
 GROUP BY series_id
 ORDER BY series_id
 ```
@@ -76,7 +76,7 @@ To run a query from the command line, [install DuckDB](https://duckdb.org/instal
 ```bash
 duckdb -c "
   SELECT vintage_date::DATE AS published, value
-  FROM 'https://aeturrell.github.io/real-time-data/realtimedata.parquet'
+  FROM 'https://raw.githubusercontent.com/aeturrell/real-time-data/realtimedata.parquet'
   WHERE series_id = 'IHYQ' AND reference_period = '2020Q2'
   ORDER BY vintage_date"
 ```
@@ -86,7 +86,7 @@ You can also paste either query into [DuckDB's browser shell](https://shell.duck
 ## Bulk download the file
 
 ```bash
-curl -O https://aeturrell.github.io/real-time-data/realtimedata.parquet
+curl -O https://raw.githubusercontent.com/aeturrell/real-time-data/realtimedata.parquet
 ```
 
 ## Explore the data
@@ -101,7 +101,7 @@ This opens the interface in your browser, installing the extension it needs on f
 
 ```sql
 CREATE VIEW realtime AS
-SELECT * FROM 'https://aeturrell.github.io/real-time-data/realtimedata.parquet'
+SELECT * FROM 'https://raw.githubusercontent.com/aeturrell/real-time-data/realtimedata.parquet'
 ```
 
 Click `realtime` in the list on the left to see each column's type and a summary of its values, then write queries against it in further cells. The [DuckDB UI documentation](https://duckdb.org/docs/stable/core_extensions/ui) covers the options, and [the announcement](https://duckdb.org/2025/03/12/duckdb-ui) of **DuckDB UI** gives a tour of its features.
@@ -118,7 +118,7 @@ import ibis
 import pandas as pd
 from ibis import _
 
-archive = ibis.read_parquet("https://aeturrell.github.io/real-time-data/realtimedata.parquet")
+archive = ibis.read_parquet("https://raw.githubusercontent.com/aeturrell/real-time-data/realtimedata.parquet")
 ```
 
 ```{python}
