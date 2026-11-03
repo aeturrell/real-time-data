@@ -47,8 +47,10 @@ latest_gdp_billions_text = f"{latest_gdp_millions / MILLIONS_PER_BILLION:,.0f}"
 latest_gdp_quarter = theme.quarter_in_words(latest_nominal_gdp.index[-1])
 ```
 
+[![DOI](https://zenodo.org/badge/427734171.svg)](https://doi.org/10.5281/zenodo.23900406)\
+
 ::: {.lead-text}
-Economic statistics change after they are first published. This project collects UK economic figures with their publication dates, so you can see the numbers as they stood on any day in the past. They currently come from the Office for National Statistics (ONS) and the Bank of England.
+This is an archive of real-time data built from vintage-based data from the Bank of England and Office for National Statistics.
 :::
 
 ::: {.stat-grid}
@@ -74,7 +76,7 @@ Economic statistics change after they are first published. This project collects
 :::
 :::
 
-> WARNING: This project has been largely vibe-coded. Use with caution.
+> WARNING: This project has been substantially vibe coded. Use with caution.
 
 [![DOI](https://zenodo.org/badge/427734171.svg)](https://doi.org/10.5281/zenodo.23900406)
 
@@ -82,25 +84,30 @@ Economic statistics change after they are first published. This project collects
 [Read the guide to the data](guide.qmd)
 :::
 
-## Why this exists
 
-ONS first estimated that UK GDP fell by `{python} first_fall`% in the `{python} example_quarter`. That figure came out in `{python} first_estimate_month`. The estimate for the same quarter is now a fall of `{python} latest_fall`%. That difference of `{python} revision_points_text` percentage points would be worth about £`{python} revision_billions_text` billion in a quarter today, based on the latest figure for quarterly GDP at current prices: £`{python} latest_gdp_billions_text` billion in the `{python} latest_gdp_quarter`.
+## Introduction
 
-Most data downloads give you only the newest version of each number. That is a problem if you want to ask what a forecaster or a central bank could have known at the time, or to test a forecasting model fairly. A model tested on today's figures has an unfair advantage, because it sees corrections that nobody had at the time.
+This is an archive of real-time data. It is inspired by [ALFRED](https://alfred.stlouisfed.org/), the St. Louis Fed's archive of US data. We try to fill a similar gap for the UK. Coverage includes GDP and its main components, industry output, prices, the labour market, trade, household finances, government borrowing, and some survey data.
 
-This archive keeps the old numbers. The idea follows [ALFRED](https://alfred.stlouisfed.org/), the St. Louis Fed's archive of US data. Coverage so far is GDP and its main components, industry output, prices, the labour market, trade, household finances and government borrowing.
+## Why a real-time data archive?
 
-## What you get
+ONS first estimated that UK GDP fell by `{python} first_fall`% in the `{python} example_quarter`. That figure came out in `{python} first_estimate_month`. The estimate for the same quarter is now a fall of `{python} latest_fall`%. That difference of `{python} revision_points_text` percentage points would be equivalent to about £`{python} revision_billions_text` billion in a quarter today, based on the latest figure for quarterly GDP at current prices: £`{python} latest_gdp_billions_text` billion in the `{python} latest_gdp_quarter`. So... revisions matter!
 
-You get one file, in parquet format, holding one table. Each row says: on this date, this value was published for this series and this period. Each row also records where the value came from and when it was downloaded, so you can trace any value back to the original ONS file.
+Revisions matter for forecasting and nowcasting too. If we truly wish to know how our model will perform in real-time, we need real-time data!
 
-## Get the data
+## How are you providing the data?
 
-You can [download the file or query it directly](accessing_the_data.qmd), without an account.
+As one file, in the super efficient and type-aware parquet format[^a], in one table. You can [download the file or query it directly](accessing_the_data.qmd). No account necessary!
 
-The [guide to the data](guide.qmd) explains what the archive holds, the decisions behind it and how far you can rely on it. Read it before using the figures in your own work.
+Each row says: on this date, this value was published for this series and this period. Each row also records where the value came from and when it was downloaded, so you can trace any value back to the original file.
 
-## If you use the data, cite us
+The [guide to the data](guide.qmd) explains more about what the archive holds, the decisions behind it and how far you can rely on it. Read it before using the figures in your own work.
+
+[^a]: [Databricks](https://www.databricks.com/blog/what-is-parquet) estimate that it uses 87% less space than a CSV file, and can be read 34x faster.
+
+## Citing the project
+
+If you benefit from this "public good", we'd be really grateful if you could cite UK real time data. Citations help show that there's demand for this public good to be maintained, and for others to be created in the future.
 
 The file is updated as new figures are published, so the citation gives the date of the latest publication it holds. Please cite the version you used:
 

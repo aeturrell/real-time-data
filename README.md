@@ -1,14 +1,27 @@
-# real-time-data
+# UK Real Time Data
+
+[![DOI](https://zenodo.org/badge/427734171.svg)](https://doi.org/10.5281/zenodo.23900406)
 
 [![DOI](https://zenodo.org/badge/427734171.svg)](https://doi.org/10.5281/zenodo.23900406)
 
 ## Introduction
 
-This repo builds a real-time (vintage) archive of UK economic data, in the spirit of [ALFRED](https://alfred.stlouisfed.org/). For every series it records not just the latest numbers, but what was published on each date: the first estimate and every revision since. The figures currently come from two publishers: the Office for National Statistics (ONS) and the Bank of England.
+This repo provides a real-time, vintage-aware archive of UK economic data, in the spirit of [ALFRED](https://alfred.stlouisfed.org/). For every series, it records what was published on what date. The figures currently come from two publishers: the Office for National Statistics (ONS) and the Bank of England.
 
-The result is a single tidy parquet file, `realtimedata.parquet`, built entirely from code. Every raw file downloaded is kept in `scratch/cache/` with a record of when it was fetched, so the archive can be rebuilt exactly, and new releases can be added at any time.
+The result is a single tidy parquet file, `realtimedata.parquet`.
 
-## Installing
+> [!WARNING]
+> This project has been substantially vibe coded. Use with caution.
+
+## Using the archive
+
+Please see the [docs](https://aeturrell.github.io/real-time-data/).
+
+## Development
+
+Every raw file downloaded is kept in `scratch/cache/` with a record of when it was fetched, so the archive can be rebuilt exactly, and new releases can be added at any time.
+
+### Installing
 
 The Python environment is managed by [uv](https://docs.astral.sh/uv/). To install it, run
 
@@ -16,7 +29,7 @@ The Python environment is managed by [uv](https://docs.astral.sh/uv/). To instal
 uv sync
 ```
 
-## Running
+### Running
 
 ```bash
 uv run realtime build            # download anything new and rebuild the archive
@@ -36,7 +49,7 @@ uv run realtime benchmark        # compare with the OECD's independent real-time
 
 `benchmark` checks the archive against the OECD's short-term economic statistics revisions database, which has kept every monthly edition of its UK figures since February 1999 and was assembled independently of this archive. For each OECD edition, the latest 12 periods are compared with our figures from around the same date, and the share agreeing is written to `scratch/oecd_benchmark.csv`.
 
-The first build downloads several thousand files, at a polite rate, so it takes a few hours. Past versions of published files and pages rarely change, so later builds mostly fetch only what is new.
+The first build downloads several thousand files, at a capped rate, so it takes a few hours. Past versions of published files and pages rarely change, so later builds mostly fetch only what is new.
 
 Each build also writes `scratch/diagnostics.csv`, which shows for each series how many vintages it has, the dates they span, and how many are dated to the exact day. It also gives the usual (median) gap between vintages and the longest gap, with the date it ended. A gap more than three times the usual one is flagged as `unusual_gap`, because it usually means releases are missing.
 
@@ -46,6 +59,7 @@ Each build also writes `scratch/diagnostics.csv`, which shows for each series ho
 - **Reference period**: the period a value describes, such as 2024 Q1 or March 2024. It is a proper period, not a timestamp.
 - **Change-only storage**: a row is kept only when a value is first published or later revised. Any past vintage can be rebuilt from these rows.
 - **CDID**: the four-character ONS code for a single time series, for example `ABMI` for GDP.
+
 
 ## The archive
 
@@ -71,40 +85,7 @@ Vintage dates are never earlier than the true publication date, so the archive d
 
 ## Using the archive
 
-```python
-from realtime import as_of, convert_frequency, read_archive, revision_triangle, to_period_dtype
 
-archive = read_archive()
-gdp_in_june_2020 = as_of(archive, "2020-06-30").query("series_id == 'ABMI'")
-triangle = revision_triangle(archive, "IHYQ")
-archive["quarter"] = convert_frequency(archive["reference_period"], "Q")
-```
-
-To study first estimates only, keep rows where `release_type == "first"`; `history` rows are old figures, not releases.
-
-`read_archive` turns `reference_period` into `pd.Period` objects. One table holds every frequency, so the column has object dtype; `to_period_dtype` gives a true `PeriodDtype` for a single-frequency subset.
-
-Things to be aware of:
-
-- **Dating precision changes in late 2015.** Before then, most vintages are dated to the last day of their publication month (precision `month` or `upper_bound`); after it, to the exact day (`day`). To keep the information set defined the same way over the whole sample, move every vintage date to the end of its month:
-
-  ```python
-  import pandas as pd
-
-  from realtime import as_of, read_archive
-
-  archive = read_archive()
-  archive["vintage_date"] = archive["vintage_date"] + pd.offsets.MonthEnd(0)
-  known_end_2008 = as_of(archive, "2008-12-31")
-  ```
-
-  Month-end dates are the latest a value could have been published. So a model never sees data before it was released, although it may see some data a few weeks later than it really appeared.
-- **Only from late 2015:** earnings growth (`KAC2`, `KAI9`), vacancies (`AP2Y`), public sector net borrowing (`J5II`), CPIH (`L55O`), core and services CPI (`DKO8`, `D7NN`), and the levels of employment and unemployment. Nothing published earlier is held for these.
-- **GDP vintages from 1992 to 1998.** About 5% of growth rates in the `IHYQ` triangle differ, by up to 0.5 percentage points, from growth worked out from the `ABMI` real-time database. This is not yet explained, so treat this stretch with some caution.
-- **When using levels** (for example `ABMI` back to 1961), compare values only within a single vintage. For instance, work out growth within each vintage and only then compare across vintages.
-- **Missing releases.** Some releases are in no source collected. The labour market levels (`MGRZ`, `MGSC`, `YBUS`, `LF2S`) have no vintages between October 2023 and February 2024; the rates (`MGSX`, `LF24`) are filled from their triangles. `scratch/diagnostics.csv` flags gaps like this as `unusual_gap`.
-- **A one-day ONS error in `YBUS`.** The annual figures in the file ONS issued on 19 February 2019 are about 1,000 times too large (1,037,545 rather than 1,037.6 for 2018), and the next version, dated 20 February, corrects them. They are kept as published, so they appear as a first value or revision and then a further revision. Leave out annual `YBUS` rows dated 19 February 2019 when studying revisions.
-- **Never-revised back-fills** (`D7G7` and `CHAW` before late 2015) are dated at the end of the month after the reference month. That is later than the true release, but never earlier.
 
 ## Sources
 
@@ -205,6 +186,8 @@ To release a new version:
 3. Merge these changes into `main` through a pull request.
 
 When a merge into `main` changes the version in `pyproject.toml`, the `Deploy docs` workflow builds the site and publishes it to GitHub Pages. Other merges into `main` publish nothing. You can also run the workflow by hand from the repository's Actions tab, which publishes the branch you choose.
+
+The same merge also starts the `Release` workflow, which tags the merge as `v` plus the version number (for example, `v0.2.0`) and creates a GitHub release. GitHub writes the release notes from the pull requests merged since the previous release, so clear pull request titles make clear notes. A version that already has a release is left alone, so changing another part of `pyproject.toml` creates nothing. If this workflow fails, or the current version has no release yet, open `Release` in the Actions tab and choose **Run workflow** on `main`.
 
 If a deployment fails after the version has been raised, merging a fix will not start it again unless that merge also changes `pyproject.toml`. Once the fix is on `main`, open `Deploy docs` in the Actions tab and choose **Run workflow** on `main`.
 

@@ -42,14 +42,14 @@ def show_table(table: pd.DataFrame, decimals: int = 1) -> Markdown:
 ```
 
 ::: {.lead-text}
-The whole archive is one `{python} file_size` MB parquet file. You can download it, or point a query tool at its web address and read it from there. Either way you need no account and no key.
+The archive consists of a single parquet file (currently `{python} file_size` MB.) The file is published as part of the site. You can download it, or point a query tool at its web address and read it from there.
 :::
 
-The file is published with this website, and the site's charts and figures are built from it. So when the site updates, the file updates too. The address stays the same, so anything you write against it picks up new data by itself. After an update, your browser or our web host may keep showing the old copy for up to 10 minutes.
+## Query the data without downloading the file
 
-## Query it without downloading
+We recommend [DuckDB](https://duckdb.org/) for querying cuts of the data. [DuckDB](https://duckdb.org/) is a free database query engine that runs on your own computer and can read a parquet file from a web address.
 
-[DuckDB](https://duckdb.org/) is a free database that runs on your own computer and can read a parquet file from a web address. This query asks for every value published for the UK's GDP growth in the second quarter of 2020:
+The example query below asks for every value of UK GDP growth in the second quarter of 2020:
 
 ```sql
 SELECT vintage_date::DATE AS published, value
@@ -58,7 +58,7 @@ WHERE series_id = 'IHYQ' AND reference_period = '2020Q2'
 ORDER BY vintage_date
 ```
 
-And this one lists every series, with its name and the dates of its first and latest publications:
+Another example: list every series, with its name and the dates of its first and latest publications:
 
 ```sql
 SELECT
@@ -71,7 +71,7 @@ GROUP BY series_id
 ORDER BY series_id
 ```
 
-To run a query from the command line, [install DuckDB](https://duckdb.org/install/) and pass it the query in quotes:
+To run a query from the command line, [install DuckDB](https://duckdb.org/install/) and, if using from the command line, pass the query to it in quotes:
 
 ```bash
 duckdb -c "
@@ -89,28 +89,28 @@ You can also paste either query into [DuckDB's browser shell](https://shell.duck
 curl -O https://aeturrell.github.io/real-time-data/realtimedata.parquet
 ```
 
-There are no extra steps: each row is one published value, and the [guide to the data](guide.qmd) explains what the archive holds and how far to rely on it.
-
 ## Explore the data
 
-DuckDB also comes with a notebook-style interface, which is an easy way to browse the archive. It needs DuckDB 1.2.1 or later. Start it with:
+DuckDB also comes with a notebook-style interface, which is an easy way to browse the archive. It needs DuckDB 1.2.1 or later. If you already have **duckdb**, start the user interface with:
 
 ```bash
 duckdb -ui
 ```
 
-This opens the interface in your browser, installing the extension it needs the first time. In a notebook cell, make a view (a saved query you can treat as a table) of the file:
+This opens the interface in your browser, installing the extension it needs on first run. In a notebook cell, make a view (a saved query you can treat as a table) of the file:
 
 ```sql
 CREATE VIEW realtime AS
 SELECT * FROM 'https://aeturrell.github.io/real-time-data/realtimedata.parquet'
 ```
 
-Click `realtime` in the list on the left to see each column's type and a summary of its values, then write queries against it in further cells. The [DuckDB UI documentation](https://duckdb.org/docs/stable/core_extensions/ui) covers the options, and [the announcement](https://duckdb.org/2025/03/12/duckdb-ui) gives a tour of its features.
+Click `realtime` in the list on the left to see each column's type and a summary of its values, then write queries against it in further cells. The [DuckDB UI documentation](https://duckdb.org/docs/stable/core_extensions/ui) covers the options, and [the announcement](https://duckdb.org/2025/03/12/duckdb-ui) of **DuckDB UI** gives a tour of its features.
 
-## Use it from Python
+## Use the data from Python
 
-The rest of this page works from Python using [Ibis](https://ibis-project.org/), which writes the queries for DuckDB. Queries are ordinary Python code, so they get syntax highlighting and your editor can check them. Every example can be copied and run as it is. You need only `uv add 'ibis-framework[duckdb]' pandas`, plus this setting:
+The rest of this page works from Python using [Ibis](https://ibis-project.org/), which writes queries that are executed by DuckDB. You'll need **DuckDB** and **Ibis** in your Python installation to run this. Run `uv add 'ibis-framework[duckdb]' pandas duckdb`.
+
+Queries are ordinary Python code. Every example can be copied and run as it is.
 
 ```{python}
 #| eval: false
@@ -132,8 +132,6 @@ archive = ibis.read_parquet(ARCHIVE_PATH)
 In these examples, `_` stands for the table at that step of the query, so `_.value` means its `value` column.
 
 ## See the numbers as they stood on a past date
-
-This is what makes a real-time archive different from an ordinary download. Each row gives the date a value was published, so to rebuild any past moment, take the newest row for each period up to that date.
 
 Here is the 2008 recession, as it looked at the end of January 2009 and as it looks now:
 
@@ -175,9 +173,13 @@ show_table(
 
 Adding up the four quarters gives a rough sense of the difference: `{python} f"{then_total:.1f}"` percentage points as seen at the time, and `{python} f"{now_total:.1f}"` now. Anyone judging policy decisions from that winter should use the first column, because that is what people had in front of them.
 
-## Follow a revision: unemployment
+## Examples
 
-Unemployment rates are revised less than GDP growth, but they do change, sometimes in ways that alter the story. In October 2023 ONS stopped publishing its usual Labour Force Survey estimates, because too few people were responding. They returned in February 2024, reweighted to new population figures, and were reweighted again in December 2024.
+These are just illustrative.
+
+### Follow a revision: unemployment
+
+Unemployment rates are revised less than GDP growth, but they do change, sometimes in ways that alter the story. In October 2023 ONS stopped publishing its usual Labour Force Survey estimates, because too few people were responding. The survey returned in February 2024, reweighted to new population figures, and the data were reweighted again in December 2024.
 
 This query collects each value of the unemployment rate (`MGSX`) with its publication date. The rates are rolling three-month figures, stored against the month each window ends.
 
@@ -271,9 +273,9 @@ largest_change_before = pause_comparison.loc[largest_change_month, "before"]
 largest_change_after = pause_comparison.loc[largest_change_month, "after"]
 ```
 
-The February 2024 figures raised some earlier rates. For `{python} largest_change_month`, for example, the rate went from `{python} f"{largest_change_before:.1f}"`% to `{python} f"{largest_change_after:.1f}"`%. The later reweighting took part of that back. An ordinary download shows only the latest line, so these changes would be invisible.
+The February 2024 figures raised some earlier rates. For `{python} largest_change_month`, for example, the rate went from `{python} f"{largest_change_before:.1f}"`% to `{python} f"{largest_change_after:.1f}"`%. The later reweighting rewound some of that.
 
-## Compare how much series get revised
+### Compare how much series get revised
 
 Because all series share one format, a single query can compare them. This takes each period's first published value and its latest value, then measures the average gap. It leaves out `history` rows, because for those the archive does not hold the true first estimate. Recent periods have had less time to be revised, so these averages slightly understate the eventual gap.
 
@@ -326,7 +328,7 @@ show_table(
 )
 ```
 
-## Trace a value back to its source
+### Trace a value back to its source
 
 Every row records where the value came from, when it was fetched and a SHA-256 fingerprint of the original file. You can use the fingerprint to check that a copy of the file is the one used here.
 
@@ -358,11 +360,9 @@ fingerprint_start = source_row["content_sha256"][:FINGERPRINT_CHARACTERS_SHOWN]
 
 The first estimate of `{python} f"{source_row['value']:.1f}"`% was published on `{python} f"{source_row['published']:%d %B %Y}"`. It came from [this page on the ONS website](`{python} source_link`){target="_blank" rel="noopener"}, and the fingerprint of the data behind it begins `{python} fingerprint_start`.
 
-## The nowcasting query
+### An example nowcasting query
 
-A nowcast estimates GDP growth for a quarter before ONS has published it. To test one fairly, you need every input as it arrived. This query gets a minimal set of series in the shape most models want: one row for each value published, with the series, the period it describes, the date it was published and the value.
-
-The set is quarterly GDP growth, which is the thing being estimated, plus monthly GDP, production, services, retail sales, unemployment, CPI inflation and one business survey. All are growth rates, rates or scores, so their units do not shift between publications.
+Of course, a major use case of real-time data is nowcasting. Below is an example that pulls quarterly GDP growth, monthly GDP, production, services, retail sales, unemployment, CPI inflation, and a business survey. All are growth rates, rates or scores, so their units do not shift between publications.
 
 ```{python}
 NOWCASTING_SERIES = {
@@ -393,7 +393,7 @@ nowcasting_data.head()
 
 Those are the oldest rows, and `.tail()` gives the newest. To see what a model would have had on any date, keep the rows published by then and take the newest value for each series and period.
 
-Next, pick a quarter and follow the data arriving between the day it began and the day of its first GDP estimate:
+Next, let's pick a quarter and follow the data arriving between the day it began and the day of its first GDP estimate being released:
 
 ```{python}
 CHOSEN_QUARTER = pd.Period("2025Q3", "Q")
@@ -494,11 +494,17 @@ earliest_series = first_arrivals.index[0]
 
 The first GDP estimate came on `{python} f"{first_gdp_estimate_date:%d %B %Y}"`. The earliest signal about the quarter in this set was `{python} NOWCASTING_SERIES[earliest_series]`, `{python} f"{days_before_gdp.iloc[0]}"` days before that. A nowcast made partway through the quarter therefore has some series with figures for it and others that stop a month or two earlier. This uneven edge is what nowcasting models have to handle, and it is only visible with publication dates. Series can also skip a period: the archive holds no Agents' score for September 2025, and that score's dates are the latest it could have appeared, not exact days.
 
-## Do business surveys lead GDP?
+### Do business surveys lead GDP?
 
-Surveys of firms, often called soft data, come out sooner than official GDP. But are they a useful early signal, and a signal of which GDP: the first estimate, or the figure after years of revision? Only an archive with publication dates can test this fairly, because it can restrict the survey data to what had really been published at each point.
+Surveys of firms, often called soft data, come out sooner than official GDP. They often provide a useful early signal.
 
-This example uses two Bank of England Agents' scores, for consumer goods and consumer services, because they measure activity and have been public since 2006. Each is put on a common scale by subtracting its mean (μ) and dividing by its standard deviation (σ): z = (x − μ) / σ. The index is the average of the two over the latest three months.
+This example uses two Bank of England Agents' scores, for consumer goods and consumer services, because they measure activity and have been public since 2006. Each is put on a common scale by subtracting its mean ($\mu$) and dividing by its standard deviation ($\sigma$):
+
+$$
+z = \frac{x - \mu}{\sigma}
+$$
+
+The index is the average of the two over the latest three months.
 
 For each quarter's GDP release, the code keeps only the rows published before that day, so nothing from the future leaks in.
 
@@ -548,7 +554,7 @@ def survey_index_before(date: pd.Timestamp) -> float:
 gdp["survey_index"] = gdp["first_published"].map(survey_index_before)
 ```
 
-So `survey_index` for a given quarter is what you could have worked out on the day before that quarter's first GDP estimate. Next, compare it with GDP growth in that quarter and the following ones. As a benchmark, the last column uses that day's first estimate of GDP instead of the survey index. The pandemic is left out, and so are quarters from 2024 onwards, because their latest estimates have had little time to be revised.
+The `survey_index` for a given quarter is what you could have worked out on the day before that quarter's first GDP estimate. It is compared with GDP growth in that quarter and the following ones. As a benchmark, the last column uses that day's first estimate of GDP instead of the survey index. (The pandemic and quarters from 2024 are left out.)
 
 ```{python}
 PANDEMIC_QUARTERS = pd.period_range("2020Q1", "2021Q4", freq="Q")
@@ -676,10 +682,4 @@ one_ahead_recent = correlations_ahead(ONE_QUARTER, start=RECENT_START)
 one_ahead_with_pandemic = correlations_ahead(ONE_QUARTER, leave_out_pandemic=False)
 ```
 
-A correlation runs from −1 to 1, where 0 means no straight-line relationship. The survey index does give a modest early signal: one quarter ahead, its correlation with the first estimate is `{python} f"{one_ahead['with_first']:.2f}"`. But that is no better than the first GDP estimate alone, at `{python} f"{one_ahead['gdp_alone']:.2f}"`. The index only pulls clearly ahead three quarters out, where both correlations are weak. From two quarters ahead, it tracks the first estimate more closely than the latest one, which shows that the estimate you test against can change how good a signal looks.
-
-The signal has clear limits, so treat this as an illustration, not a finding to rely on:
-
-- **It comes mostly from one recession.** Using only survey readings from 2016 onwards, the one-quarter-ahead correlation with the first estimate is `{python} f"{one_ahead_recent['with_first']:.2f}"`, across `{python} one_ahead_recent['quarters_compared']` quarters.
-- **The pandemic removes it.** With those quarters included, the same correlation over the whole sample is `{python} f"{one_ahead_with_pandemic['with_first']:.2f}"`.
-- **Publication dates are cautious, not exact.** Agents' scores are dated at the latest they could have appeared, so some were really available earlier than shown.
+The survey index gives a modest early signal: one quarter ahead, its correlation with the first estimate is `{python} f"{one_ahead['with_first']:.2f}"`. The index pulls ahead three quarters out.

@@ -1,6 +1,6 @@
 ---
 title: "Guide to the data"
-subtitle: "What the archive holds, how it was put together, and how far to rely on it"
+subtitle: "How to use the data archive"
 jupyter: python3
 ---
 
@@ -27,7 +27,6 @@ from realtime.benchmark import (
 )
 from realtime.settings import OECD_GDP_GROWTH_PATH
 from realtime.validate import (
-    growth_agreement,
     growth_agreement_report,
     look_ahead_summary,
     mixed_basis_summary,
@@ -63,8 +62,6 @@ LOOSE_POINTS = f"{LOOSE_TOLERANCE:.2f}"
 BASE_PERIOD = pd.Period("1997Q1", "Q")
 TYPING_ERROR_SERIES = "NPQT_QOQ"
 TYPING_ERROR_PERIOD = pd.Period("2002Q2", "Q")
-EARLY_VINTAGES_END = "1998-12-31"
-LABOUR_LEVEL_SERIES = "MGRZ"
 MONTHLY_GDP_SERIES = "ECYX"
 HISTORY_EXAMPLE_SERIES = "IHYQ"
 GAP_CUTOFF_YEAR = 2000
@@ -189,43 +186,26 @@ gap_year_count = agreement["largest_at"].str.extract(r"as of (\d{4})")[0].astype
 gaps_before_2000 = f"{gap_year_count}"
 growth_pair_count = f"{len(agreement)}"
 
-early_quarterly = archive.loc[
-    (archive["frequency"] == "Q") & (archive["vintage_date"] <= EARLY_VINTAGES_END)
-]
-early_agreement = growth_agreement(early_quarterly, "IHYQ", "ABMI")
-early_first_year = f"{early_quarterly.loc[early_quarterly['series_id'] == 'IHYQ', 'vintage_date'].min().year}"
-early_last_year = f"{pd.Timestamp(EARLY_VINTAGES_END).year}"
-early_tight_share = share_text(early_agreement["share_within_rounding"])
-early_loose_share = share_text(early_agreement["share_within_0.15"])
-early_largest_gap = f"{early_agreement['largest_difference']:.1f}"
-
-labour_vintages = pd.Series(
-    sorted(archive.loc[archive["series_id"] == LABOUR_LEVEL_SERIES, "vintage_date"].unique())
-)
-labour_gap_position = labour_vintages.diff().idxmax()
-labour_gap_start = f"{labour_vintages[labour_gap_position - 1]:%B %Y}"
-labour_gap_end = f"{labour_vintages[labour_gap_position]:%B %Y}"
-
 window_days_before = f"{DAYS_BEFORE_EDITION}"
 window_days_after = f"{DAYS_AFTER_EDITION}"
 ```
 
 ::: {.lead-text}
-This page describes what you have when you open the archive. It covers what the data consist of, where they came from, the choices made in assembling them, and the checks they have passed. It avoids code and formulas.
+This page is a guide to what's in the archive. It covers what the data consist of, where they came from, the choices made in assembling them, and checks on them.
 :::
 
-The figures on this page are worked out from the archive each time the site is built. These ones reflect data downloaded up to `{python} last_retrieved`.
+## Terms
 
-## What you have
+- **Vintage date**: the date a value was published.
+- **Reference period**: the period a value describes, such as 2024 Q1 or March 2024. It is a proper period, not a timestamp.
+- **Change-only storage**: a row is kept only when a value is first published or later revised. Any past vintage can be rebuilt from these rows.
+- **CDID**: the four-character ONS code for a single time series, for example `ABMI` for GDP.
 
-The archive is a single table. Each row is one published statement about the UK economy: **on this date, the value of this series for this period was this number.**
+## The data
 
-Two dates matter, and keeping them apart is the point of the archive:
+The archive consists of a single table in parquet format. Each row gives a single economic value, its **reference period** (the time the number describes, such as a particular quarter or month), and the **vintage date** (the day the number was published), plus other meta-data.
 
-- The **reference period** is the time the number describes, such as a particular quarter or month.
-- The **vintage date** is the day the number was published. A "vintage" is the full set of figures as they stood on a given date, like a year on a bottle of wine.
-
-A row exists only when something new was said, which means a period's first figure or a later change to it. If a number is republished unchanged, no row is added. You can still rebuild the figures as they stood on any date, because the most recent row on or before that date is the figure that was then in force. ALFRED, the St. Louis Fed's archive of US data, stores its data the same way.
+A row appears only when there is new information. If a number is republished unchanged, no row is added. You can still rebuild the figures as they stood on any date, because the most recent row on or before that date is the figure that was then in force. (ALFRED, the St. Louis Fed's archive of US data, stores its data the same way.)
 
 ::: {.stat-grid}
 ::: {.stat}
@@ -257,9 +237,9 @@ A row exists only when something new was said, which means a period's first figu
 
 Of the rows, `{python} first_estimate_count` are first estimates, `{python} revision_count` are revisions, and `{python} history_count` are old figures that the archive first saw long after the period ended. Those last ones are labelled `history` and should not be treated as first estimates.
 
-## What it covers
+## What the data cover
 
-The series are the ones an economist would reach for when tracking the UK economy: GDP and its components, output by industry, prices, the labour market, trade, and household and government finances, along with `{python} survey_series_count` results from four business surveys. Most official series come from the Office for National Statistics (ONS), the UK's national statistics office, and have a CDID, which is ONS's four-character code for a time series (`ABMI` is GDP, for example). Where ONS publishes a growth-rate table with no code of its own, the archive uses a label based on the matching code, such as `IOS_MOM` for monthly growth in services. Survey series have codes of our own, such as `DMP_SALES_REALISED_MEAN`.
+GDP and its components, output by industry, prices, the labour market, trade, and household and government finances, along with `{python} survey_series_count` results from four business surveys. Most official series come from the Office for National Statistics (ONS), the UK's national statistics office, and have a CDID, which is ONS's four-character code for a time series (`ABMI` is GDP, for example). Where ONS publishes a growth-rate table with no code of its own, the archive uses a label based on the matching code, such as `IOS_MOM` for monthly growth in services. Survey series have codes of our own, such as `DMP_SALES_REALISED_MEAN`.
 
 ```{python}
 #| label: fig-coverage
@@ -432,7 +412,7 @@ heat_axes.legend(
 plt.show()
 ```
 
-How to read the chart:
+How to read @fig-coverage:
 
 - **Depth varies a lot between series.** GDP is held back to `{python} first_vintage_year`. `{python} series_before_2000` series have publications from before `{python} gap_cutoff_year`. `{python} series_from_2015` official series start in `{python} late_start_year` or later. Most of these rely on the ONS website's own page history, which begins around then, and a few only began being published later (monthly GDP dates from `{python} monthly_gdp_year`).
 - **A step up from `{python} exact_dating_start`.** The band of publications thickens sharply from that point, because that is when the page histories begin.
@@ -442,7 +422,7 @@ A single series can hold annual, quarterly and monthly figures at once, as ONS o
 
 Many indicators appear twice, once as a level (`ABMI`, GDP in pounds) and once as a growth rate (`IHYQ`, GDP growth on the previous quarter). The two forms come from different ONS products and are kept apart on purpose.
 
-## Where it came from
+## Where these data come from
 
 The figures come from files published by ONS and the Bank of England, gathered by `{python} source_route_count` routes. The `source` column names the publisher and the `route` column names the route:
 
@@ -511,27 +491,27 @@ axes.legend(ncol=2, loc="upper left", bbox_to_anchor=(0, LEGEND_TOP), borderaxes
 plt.show()
 ```
 
-`{python} page_history_share` of rows come from page histories and `{python} day_precision_share` of rows are dated to the exact day. Each row records its source file, that file's fingerprint (a hash, which changes if the contents change) and when it was downloaded. Each raw file is kept, so the table can be rebuilt without going back to the publishers.
+@fig-sources shows that `{python} page_history_share` of rows come from page histories and `{python} day_precision_share` of rows are dated to the exact day. Each row records its source file, that file's fingerprint (a hash, which changes if the contents change) and when it was downloaded. Each raw file is kept, so the table can be rebuilt without going back to the publishers.
 
-## Decisions made along the way
+## Judgements made in assembling the data
 
-Nobody set out to publish this dataset, so assembling it took some judgement. These are the choices most likely to affect your results.
+These are the choices most likely to affect your results.
 
-**Dates err on the late side.** Dates must never suggest a figure was known before it was. Older sources give only a publication month, so those rows are dated to the last day of that month. A model using the archive may therefore see an old figure a few weeks after it came out, but never before. The `vintage_date_precision` column says how each date was arrived at: `day` for exact, `month` for the end of the known month, and `upper_bound` for the latest date it could have been.
+**If vintage is uncertain, we err on the late side.** Dates must never suggest a figure was known before it was. Older sources give only a publication month, so those rows are dated to the last day of that month. A model using the archive may therefore see an old figure a few weeks after it came out, but we aim to to prevent it from appearing *before* it came out in reality. The `vintage_date_precision` column says how each date was arrived at: `day` for exact, `month` for the end of the known month, and `upper_bound` for the latest date it could have been.
 
-**Dating gets sharper from `{python} exact_dating_start`.** Before then, nearly all dates are month-ends. Afterwards, most are exact. If your work spans the join and needs a consistent definition of what was known when, move every date to the end of its month.
+**Dating gets sharper from `{python} exact_dating_start`.** Before then, nearly all dates are month-ends. Afterwards, most are exact. This is due to how ONS makes revisions and vintages available.
 
-**One source at a time.** When sources overlap, the one with the most exact dates wins for any month it covers. Page histories rank first, then triangles and never-revised series, then real-time databases. Weaker sources fill only the months the stronger ones lack.
+**One source at a time.** When sources overlap, the one with the most exact dates is preferred. Page histories rank first, then triangles and never-revised series, then real-time databases.
 
 **Rounding differences are not revisions.** Two sources may give the same number to different decimal places. Values filling a gap are rounded to match the series' main source, so a change in rounding does not show up as a false revision.
 
-**Old figures are labelled as old.** When a period first appears in the archive more than a year after it ended, no source reaches back to its real first estimate. Such rows are marked `history`. For example, GDP growth for `{python} history_first_year` to `{python} history_last_year` first appears in a table from `{python} history_published`. To study first estimates, keep the rows labelled `first`.
+**Old figures are labelled as old.** When a period first appears in the archive more than a year after it ended, no source reaches back to its real first estimate. Such rows are marked `history`. For example, GDP growth for `{python} history_first_year` to `{python} history_last_year` first appears in a table from `{python} history_published`. To study first estimates only, use the rows labelled `first`.
 
 **Never-revised series are filled in backwards.** Before `{python} exact_dating_start`, CPI inflation and RPI come from today's figures, each dated to the end of the month after the month it describes. That is later than the true release, but never earlier.
 
-**Numbers are kept as published.** No rebasing, smoothing or correcting has been done. Levels therefore change units every few years, as ONS moves its figures to the prices of a new reference year, and the oldest GDP vintages are in the prices of much earlier years. Compare levels only within a single vintage. ONS's own slips stay in too, such as a typing error in the `{python} typing_error_month` fixed investment figures (`{python} typing_error_value`% for `{python} typing_error_quarter`).
+**Numbers are kept as published.** No rebasing, smoothing or correcting has been done. Levels therefore change units every few years, as ONS moves its figures to the prices of a new reference year, and the oldest GDP vintages are in the prices of much earlier years. Compare levels only within a single vintage.
 
-**Growth rates are the safer choice for testing models.** Because levels change units, the published growth rates are the more consistent form through time. [Which series to use](#which-series-to-use) lists a recommended series for each main indicator.
+**Growth rates are better for testing models.** Because levels change units, the published growth rates are more consistent through time. [Which series to use](#which-series-to-use) lists a recommended series for each main indicator.
 
 ## An example: UK GDP and its revisions
 
@@ -622,7 +602,7 @@ pandemic_first_date, pandemic_change_count = f"{pandemic.index[0]:%-d %B %Y}", f
 index_base = f"{PERCENT}"
 ```
 
-UK GDP as published at each date since `{python} base_year`. Each line is one vintage: the whole history of GDP as ONS showed it on one publication date. To remove changes of units, each vintage is set to `{python} index_base` in `{python} base_quarter`. Older vintages are darker. Vintages from before `{python} base_year` are left out because they do not reach the starting point.
+UK GDP as published at each date since `{python} base_year`. Each line is one vintage: the whole history of GDP as ONS showed it on one publication date. To remove changes of units, each vintage is set to `{python} index_base` in `{python} base_quarter`. Older vintages are darker. (NB: @fig-gdp does not include vintages from before `{python} base_year`.)
 
 :::
 
@@ -630,15 +610,15 @@ The lines start together at `{python} index_base` and spread apart as ONS gather
 
 Single quarters show the same thing. ONS first estimated growth in the `{python} crisis_quarter_text` at `{python} crisis_first`% in `{python} crisis_first_date`. The archive holds `{python} crisis_change_count` changes to that figure since then, and it now stands at `{python} crisis_latest`%. Growth in the `{python} pandemic_quarter_text` was first put at `{python} pandemic_first`% on `{python} pandemic_first_date`, has changed `{python} pandemic_change_count` times, and now stands at `{python} pandemic_latest`%.
 
-This chart uses the levels series, indexed within each vintage, because levels show how the whole path shifted. For most modelling work, use the growth rate instead.
+This chart uses the levels series, indexed within each vintage, because levels show how the whole path shifted.
 
-## Is it likely to be right?
+## Are these data and their vintages likely to be correct?
 
-There are two ways the archive could be wrong. It could hold the wrong number, or it could hold the right number against the wrong date. No single test rules out both, so there are several checks. They show that the archive matches what was published. They say nothing about whether ONS's estimates were themselves accurate.
+Values could be incorrect, or publication dates, or both. In this section, we show several tests that try to verify the accuracy of the values and the vintages. (Of course, this doesn't address other issues, like measurement error!)
 
 ### Comparison with an independent archive
 
-The OECD has kept its own record of UK statistics, one edition a month since `{python} oecd_first_edition`. It was assembled separately, so agreement would be hard to get by accident. Each comparison takes the most recent periods in each OECD edition, works out growth rates and checks them against the archive around the same date. That covers `{python} oecd_value_count` comparisons on `{python} oecd_series_count` of the archive's `{python} series_count` series, across up to `{python} oecd_edition_count` editions. These results were last worked out on `{python} OUTSIDE_CHECKS_DATE`.
+The OECD has kept its own record of UK statistics, one edition a month since `{python} oecd_first_edition`, shown in @fig-oecd-gdp. These data are independent of the archive. Each comparison takes the most recent periods in each OECD edition, works out growth rates and checks them against the archive around the same date. That covers `{python} oecd_value_count` comparisons on `{python} oecd_series_count` of the archive's `{python} series_count` series, across up to `{python} oecd_edition_count` editions. These results were last worked out on `{python} OUTSIDE_CHECKS_DATE`.
 
 ```{python}
 #| label: fig-oecd-gdp
@@ -750,11 +730,11 @@ axes.legend(ncol=3, loc="upper right", bbox_to_anchor=(1, BENCHMARK_LEGEND_TOP),
 plt.show()
 ```
 
-Agreement with the OECD for every comparison. The strict test uses the archive's figures from the day before the OECD edition's month. The nearby tests allow the closest vintage from `{python} window_days_before` days before to `{python} window_days_after` days after the start of that month, because the OECD may have collected figures a little earlier or later. Where a marker seems to be missing, it sits under another with the same result.
+The test uses the archive's figures from the day before the OECD edition's month. The nearby tests allow the closest vintage from `{python} window_days_before` days before to `{python} window_days_after` days after the start of that month, because the OECD may have collected figures a little earlier or later.
 
 :::
 
-Under the looser test, at least `{python} oecd_worst_loose` of figures agree in every comparison. The tighter tests fall short for two understood reasons. First, the OECD rebases ONS's one-decimal indices, so growth worked out from them can sit a little away from the rate ONS published, even for the same release. That accounts for much of the gap in production and in consumer prices. Second, the OECD may have collected a release at a different point from where the test looks.
+Under the looser test, at least `{python} oecd_worst_loose` of figures agree in every comparison. The tighter tests performs less well, but there are two reasons that this may be the case. First, the OECD rebases ONS's one-decimal indices, so growth worked out from them can sit a little away from the rate ONS published, even for the same release. That accounts for much of the gap in production and in consumer prices. Second, the OECD may have collected a release at a different point from where the test looks.
 
 Unemployment and retail sales are not compared, because the OECD's UK series are different measures from the ONS ones held here. Most other series have no outside check of this kind.
 
@@ -795,17 +775,11 @@ One of the largest gaps is the `{python} typing_error_month` typing error mentio
 
 ### Traceable values
 
-The archive is put together by a program from stored copies of the published files, with no figures entered or changed by hand. Each row names the file it came from, so you can trace or challenge a value by going back to that file.
+The archive is put together by a program from stored copies of the published files, with no figures entered or changed by hand.
 
 ## Known limits
 
-- **Short histories.** Earnings growth, vacancies, public sector net borrowing, CPIH, core and services CPI, and the levels of employment and unemployment are held only from about `{python} exact_dating_start`. Nothing earlier has been found for them.
-- **GDP vintages from `{python} early_first_year` to `{python} early_last_year`.** Published growth rates in the `IHYQ` table often differ from growth worked out from GDP levels at the same date. Only `{python} early_tight_share` agree to within rounding and `{python} early_loose_share` to within `{python} LOOSE_POINTS` points, with gaps of up to `{python} early_largest_gap` points. This is not yet explained, so treat that stretch with caution.
-- **Missing releases.** Some releases are in no source collected. For example, the labour market levels have no vintages between `{python} labour_gap_start` and `{python} labour_gap_end`. Check a series for gaps like this before relying on it.
-- **Business surveys.** Survey results come from samples of firms and are not comparable with official figures or with each other. Their histories are also short in real time: BICS results start in December 2021 and mostly May 2022, Credit Conditions Survey spreadsheets in January 2016, and Decision Maker Panel headline worksheets in late 2021 or 2022. Earlier survey periods first appear late, often as `history`.
-- **BICS release dates.** 20 of the 160 ONS editions carry the previous wave's release date. These use the next release instead, so they can be about two weeks late.
-- **Agents' scores.** Past versions of the file cannot be seen, so dates are estimates that can be up to about three months late, and any later correction by the Bank would be hidden.
-- **Sources not yet used.** ONS pages saved by the National Archives and the ONS API could fill in more of the years before `{python} exact_dating_start`.
+See [Data Issues](data_issues.qmd) for full details of the limitations of this archive.
 
 ## Which series to use
 
