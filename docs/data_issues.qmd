@@ -5,6 +5,76 @@ jupyter: python3
 ---
 
 ```{python}
+import pandas as pd
+from loguru import logger
+
+from realtime import read_archive
+from realtime.benchmark import LOOSE_TOLERANCE
+from realtime.validate import growth_agreement
+
+logger.disable("realtime")
+
+archive = read_archive()
+
+PERCENT = 100
+LOOSE_POINTS = f"{LOOSE_TOLERANCE:.2f}"
+EARLY_VINTAGES_END = "1998-12-31"
+LABOUR_LEVEL_SERIES = "MGRZ"
+SURVEY_DATASETS = ["BICS", "DMP", "CCS", "AGENTS"]
+
+
+def share_text(share: float) -> str:
+    """Formats a share between zero and one as a whole percentage.
+
+    Args:
+        share: The share.
+
+    Returns:
+        The percentage as text, for example "65%".
+    """
+    return f"{share * PERCENT:.0f}%"
+
+
+official = archive.loc[~archive["dataset_id"].astype(str).isin(SURVEY_DATASETS)]
+exact_share_by_month = (
+    (official["vintage_date_precision"] == "day")
+    .groupby(official["vintage_date"].dt.to_period("M"))
+    .mean()
+)
+exact_dating_month = exact_share_by_month.index[exact_share_by_month == 0].max() + 1
+exact_dating_start = exact_dating_month.strftime("%B %Y")
+
+early_quarterly = archive.loc[
+    (archive["frequency"] == "Q") & (archive["vintage_date"] <= EARLY_VINTAGES_END)
+]
+early_agreement = growth_agreement(early_quarterly, "IHYQ", "ABMI")
+early_first_year = f"{early_quarterly.loc[early_quarterly['series_id'] == 'IHYQ', 'vintage_date'].min().year}"
+early_last_year = f"{pd.Timestamp(EARLY_VINTAGES_END).year}"
+early_tight_share = share_text(early_agreement["share_within_rounding"])
+early_loose_share = share_text(early_agreement["share_within_0.15"])
+early_largest_gap = f"{early_agreement['largest_difference']:.1f}"
+
+labour_vintages = pd.Series(
+    sorted(archive.loc[archive["series_id"] == LABOUR_LEVEL_SERIES, "vintage_date"].unique())
+)
+labour_gap_position = labour_vintages.diff().idxmax()
+labour_gap_start = f"{labour_vintages[labour_gap_position - 1]:%B %Y}"
+labour_gap_end = f"{labour_vintages[labour_gap_position]:%B %Y}"
+```
+
+## General limitations of the data
+
+- **Short histories.** Earnings growth, vacancies, public sector net borrowing, CPIH, core and services CPI, and the levels of employment and unemployment are held only from about `{python} exact_dating_start`. Nothing earlier has been found for them.
+- **GDP vintages from `{python} early_first_year` to `{python} early_last_year`.** Published growth rates in the `IHYQ` table often differ from growth worked out from GDP levels at the same date. Only `{python} early_tight_share` agree to within rounding and `{python} early_loose_share` to within `{python} LOOSE_POINTS` points, with gaps of up to `{python} early_largest_gap` points. This is not yet explained, so treat that stretch with caution.
+- **Missing releases.** Some releases are in no source collected. For example, the labour market levels have no vintages between `{python} labour_gap_start` and `{python} labour_gap_end`. Check a series for gaps like this before relying on it.
+- **Business surveys.** Survey results come from samples of firms and are not comparable with official figures or with each other. Their histories are also short in real time: BICS results start in December 2021 and mostly May 2022, Credit Conditions Survey spreadsheets in January 2016, and Decision Maker Panel headline worksheets in late 2021 or 2022. Earlier survey periods first appear late, often as `history`.
+- **BICS release dates.** 20 of the 160 ONS editions carry the previous wave's release date. These use the next release instead, so they can be about two weeks late.
+- **Agents' scores.** Past versions of the file cannot be seen, so dates are estimates that can be up to about three months late, and any later correction by the Bank would be hidden.
+- **Sources not yet used.** ONS pages saved by the National Archives and the ONS API could fill in more of the years before `{python} exact_dating_start`.
+
+## Specific issues
+
+```{python}
 from itertools import groupby
 
 from IPython.display import Markdown
@@ -51,7 +121,7 @@ def publisher_section(publisher: str, publisher_issues: list[DataIssue]) -> str:
     Returns:
         The publisher's heading and issues.
     """
-    return "\n\n".join([f"## {publisher}", *map(issue_section, publisher_issues)])
+    return "\n\n".join([f"### {publisher}", *map(issue_section, publisher_issues)])
 ```
 
 ::: {.lead-text}
