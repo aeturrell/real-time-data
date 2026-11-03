@@ -108,7 +108,7 @@ def issue_section(issue: DataIssue) -> str:
         "Reference": f"`{issue.id}`",
     }
     lines = [f"- **{name}:** {text}" for name, text in details.items() if text]
-    return "\n".join([f"### {issue.title}", "", *lines])
+    return "\n".join([f"#### {issue.title}", "", *lines])
 
 
 def publisher_section(publisher: str, publisher_issues: list[DataIssue]) -> str:
