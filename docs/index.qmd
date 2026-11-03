@@ -78,8 +78,6 @@ This is an archive of real-time data built from vintage-based data from the Bank
 
 > WARNING: This project has been substantially vibe coded. Use with caution.
 
-[![DOI](https://zenodo.org/badge/427734171.svg)](https://doi.org/10.5281/zenodo.23900406)
-
 ::: {.button-row}
 [Read the guide to the data](guide.qmd)
 :::
