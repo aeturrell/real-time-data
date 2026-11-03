@@ -2,8 +2,6 @@
 
 [![DOI](https://zenodo.org/badge/427734171.svg)](https://doi.org/10.5281/zenodo.23900406)
 
-[![DOI](https://zenodo.org/badge/427734171.svg)](https://doi.org/10.5281/zenodo.23900406)
-
 ## Introduction
 
 This repo provides a real-time, vintage-aware archive of UK economic data, in the spirit of [ALFRED](https://alfred.stlouisfed.org/). For every series, it records what was published on what date. The figures currently come from two publishers: the Office for National Statistics (ONS) and the Bank of England.
