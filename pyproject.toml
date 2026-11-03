@@ -1,6 +1,6 @@
 [project]
 name = "real-time-data"
-version = "0.2.0"
+version = "0.2.1"
 description = "A real-time (vintage) archive of UK economic data"
 readme = "README.md"
 requires-python = ">=3.12"
