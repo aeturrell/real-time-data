@@ -204,6 +204,8 @@ To release a new version:
 
 When a merge into `main` changes the version in `pyproject.toml`, the `Deploy docs` workflow builds the site and publishes it to GitHub Pages. Other merges into `main` publish nothing. You can also run the workflow by hand from the repository's Actions tab, which publishes the branch you choose.
 
+The same merge also starts the `Release` workflow, which tags the merge as `v` plus the version number (for example, `v0.2.0`) and creates a GitHub release. GitHub writes the release notes from the pull requests merged since the previous release, so clear pull request titles make clear notes. A version that already has a release is left alone, so changing another part of `pyproject.toml` creates nothing. If this workflow fails, or the current version has no release yet, open `Release` in the Actions tab and choose **Run workflow** on `main`.
+
 If a deployment fails after the version has been raised, merging a fix will not start it again unless that merge also changes `pyproject.toml`. Once the fix is on `main`, open `Deploy docs` in the Actions tab and choose **Run workflow** on `main`.
 
 If the error says that `uv.lock` needs to be updated, run `uv lock` and merge the change.
