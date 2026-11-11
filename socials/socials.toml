@@ -1,0 +1,109 @@
+# Settings for the social media videos (MP4) and stills (PNG).
+#
+#     uv run --group socials python -m socials mp4              # every video
+#     uv run --group socials python -m socials png              # every still
+#     uv run --group socials python -m socials mp4 tape_stack   # only the named ones
+#
+# Videos and stills need Playwright's browser, installed once with:
+#
+#     uv run --group socials playwright install chromium
+#
+# Each section below sets the video and the still of the same name. A still is
+# the final frame of its video.
+#
+# Dates are written YYYY-MM-DD and quarters YYYYQn. Leave out any first_* or
+# last_* setting to use the earliest or latest the archive holds.
+#
+# Each headline can include the placeholders listed next to it, which are
+# filled in from the data.
+
+[output]
+directory = "socials/output"
+footer = "UK real-time data · aeturrell.github.io/real-time-data"
+
+# MP4 settings. 1920x1080 at 30 frames per second suits X, LinkedIn and Bluesky.
+[video]
+width_px = 1920
+height_px = 1080
+frames_per_second = 30
+end_hold_seconds = 3
+quality = 18
+
+# PNG stills: the final frame of each animation. Keep the 16:9 shape of the
+# videos; 1200x675 suits posts on X, LinkedIn and Bluesky.
+[still]
+width_px = 1200
+height_px = 675
+
+# The landing page animation: every vintage stacking up as strips of tape.
+# Video only. Headline placeholders: {count}, {first_year}, {last_year}
+[tape_stack]
+series_id = "IHYQ"
+first_quarter = "1988Q1"
+headline = "Every published estimate of UK GDP growth since {first_year}"
+
+# Every published estimate of growth in one quarter.
+# Headline placeholders: {quarter}, {count}, {first_year}, {last_year}
+[estimate_path]
+series_id = "IHYQ"
+quarter = "1997Q1"
+first_vintage = "1997-01-01"
+headline = "Every published estimate of UK GDP growth in {quarter}"
+
+# The revision triangle: how far each figure has moved from its first estimate.
+# Headline placeholders: {count}, {first_year}, {last_year}
+[revision_heatmap]
+series_id = "IHYQ"
+first_quarter = "1988Q1"
+colour_limit = 0.8
+headline = "How far UK GDP growth estimates have moved, {first_year}–{last_year}"
+
+# Every vintage of a series drawn on top of the others, with the latest in white.
+# Headline placeholders: {count}, {first_year}, {last_year}
+[vintage_overlay]
+series_id = "IHYQ"
+first_quarter = "1988Q1"
+value_limit = 2.5
+headline = "{count} vintages of UK GDP growth, {first_year}–{last_year}"
+
+# Lines from the quarter a figure describes to the date it was published.
+# A short window of vintages reads best; longer ones fill in quickly.
+# Headline placeholders: {count}, {first_year}, {last_year}
+[two_clocks]
+series_id = "IHYQ"
+first_quarter = "2015Q1"
+first_vintage = "2019-01-01"
+last_vintage = "2021-12-31"
+headline = "When each quarter's GDP growth was published and revised, {first_year}–{last_year}"
+
+# The four headline numbers from the landing page. Leave out as_of for the latest.
+# Headline placeholders: {latest}
+[archive_stats]
+headline = "What was published about the UK economy, and when"
+
+# Every publication date in the archive, with line height showing how many
+# values were published that day.
+# Headline placeholders: {count}, {first_year}, {last_year}
+[release_calendar]
+highlight_above = 2000
+headline = "{count} publication dates, {first_year}–{last_year}"
+
+# How many values are published on each day of the week.
+# Headline placeholders: {first_year}, {last_year}
+[weekday_rhythm]
+headline = "Values published on each day of the week, {first_year}–{last_year}"
+
+# Fingerprints of the source files, with a few archive rows and the file each came from.
+# Headline placeholders: {count}
+[provenance]
+first_vintage = "2024-01-01"
+track_count = 14
+record_count = 4
+seed = 1
+headline = "Every value traces back to the file it came from"
+
+# A title card in the site's style.
+[title_card]
+title = "UK real-time data"
+subtitle = "What was published about the UK economy, and when"
+split_px = 4

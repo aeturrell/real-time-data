@@ -141,3 +141,6 @@ dmypy.json
 docs/_site/
 docs/.quarto/
 docs/**/*.quarto_ipynb
+
+# Social media cards
+socials/output/
