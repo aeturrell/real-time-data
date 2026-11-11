@@ -51,6 +51,22 @@ The first build downloads several thousand files, at a capped rate, so it takes 
 
 Each build also writes `scratch/diagnostics.csv`, which shows for each series how many vintages it has, the dates they span, and how many are dated to the exact day. It also gives the usual (median) gap between vintages and the longest gap, with the date it ended. A gap more than three times the usual one is flagged as `unusual_gap`, because it usually means releases are missing.
 
+### Social media videos and stills
+
+`socials/` makes MP4 videos and PNG stills for social media from the archive, in the same style as the docs site. All settings are in `socials/socials.toml`.
+
+```bash
+uv run --group socials playwright install chromium     # once
+uv run --group socials python -m socials mp4           # every video
+uv run --group socials python -m socials png           # every still (final frame)
+```
+
+See [`socials/README.md`](socials/README.md) for what each animation shows, every setting, and how the recording works.
+
+### Landing page animation
+
+The animation at the top of the docs landing page is drawn from the archive each time the docs are rendered. `docs/_hero.py` packs every vintage of GDP growth into the page, and `docs/assets/tape_hero.js` draws it, so the animation picks up new vintages whenever the site is rebuilt.
+
 ## Terms
 
 - **Vintage date**: the date a value was published.

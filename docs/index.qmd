@@ -10,6 +10,7 @@ import pandas as pd
 from loguru import logger
 
 import _chart_theme as theme
+import _hero as hero
 from realtime import read_archive, revision_triangle
 
 logger.disable("realtime")
@@ -81,6 +82,11 @@ This is an archive of real-time data built from vintage-based data from the Bank
 ::: {.button-row}
 [Read the guide to the data](guide.qmd)
 :::
+
+```{python}
+#| output: asis
+print(hero.hero_markup(archive))
+```
 
 
 ## Introduction

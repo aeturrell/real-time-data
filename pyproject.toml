@@ -27,6 +27,11 @@ docs = [
     "nbformat>=5.11.1",
     "pyyaml>=6.0.3",
 ]
+socials = [
+    { include-group = "docs" },
+    "imageio-ffmpeg>=0.8.1",
+    "playwright>=1.65.0",
+]
 
 [project.scripts]
 realtime = "realtime.cli:main"

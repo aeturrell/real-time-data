@@ -6,6 +6,7 @@ project:
     - assets/fonts/*
     - assets/noise.svg
     - assets/favicon.png
+    - assets/tape_hero.js
 
 website:
   title: "UK REAL-TIME DATA"

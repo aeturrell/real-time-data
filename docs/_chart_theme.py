@@ -9,6 +9,7 @@ from matplotlib import font_manager
 from matplotlib.axes import Axes
 
 STATIC_GREY = "#1C1E24"
+STATIC_GREY_DEEP = "#14161B"
 CORRUPTED_VIOLET = "#5C2483"
 SCAN_LINE_CYAN = "#00F5D4"
 DEGAUSS_MAGENTA = "#FF2A85"
