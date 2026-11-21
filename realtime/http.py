@@ -6,7 +6,7 @@ from urllib.parse import urlsplit
 import requests
 from loguru import logger
 
-from realtime.settings import USER_AGENT
+from realtime.settings import USER_AGENT, WEB_ARCHIVE_HOST
 
 MIN_SECONDS_BETWEEN_REQUESTS = 1.5
 BANK_OF_ENGLAND_HOST = "www.bankofengland.co.uk"
@@ -16,6 +16,8 @@ SECONDS_BETWEEN_REQUESTS_BY_HOST = {
 }
 REQUEST_TIMEOUT_SECONDS = 60
 MAX_ATTEMPTS = 6
+WEB_ARCHIVE_MAX_ATTEMPTS = 2
+MAX_ATTEMPTS_BY_HOST = {WEB_ARCHIVE_HOST: WEB_ARCHIVE_MAX_ATTEMPTS}
 BACKOFF_BASE_SECONDS = 5.0
 RATE_LIMIT_BACKOFF_SECONDS = 60.0
 HTTP_NOT_FOUND = 404
@@ -33,6 +35,10 @@ class NotFoundError(DownloadError):
 
 class HttpClient:
     """Fetches URLs one at a time, leaving a minimum gap between requests to a website.
+
+    The National Archives' web archive is tried only twice per URL, because a
+    copy it cannot serve usually stays unservable; the caller then tries
+    another copy of the same file instead.
 
     Attributes:
         min_interval_seconds: Shortest allowed gap between two requests to a
@@ -66,8 +72,10 @@ class HttpClient:
             NotFoundError: If the server returns 404.
             DownloadError: If every attempt fails.
         """
-        for attempt in range(1, MAX_ATTEMPTS + 1):
-            self._wait_for_turn(urlsplit(url).netloc)
+        host = urlsplit(url).netloc
+        max_attempts = MAX_ATTEMPTS_BY_HOST.get(host, MAX_ATTEMPTS)
+        for attempt in range(1, max_attempts + 1):
+            self._wait_for_turn(host)
             try:
                 response = self._session.get(url, timeout=REQUEST_TIMEOUT_SECONDS)
             except requests.RequestException as error:
@@ -87,7 +95,7 @@ class HttpClient:
             if not response.ok:
                 raise DownloadError(f"{url} returned status {response.status_code}")
             return response
-        raise DownloadError(f"Giving up on {url} after {MAX_ATTEMPTS} attempts")
+        raise DownloadError(f"Giving up on {url} after {max_attempts} attempts")
 
     def _wait_for_turn(self, host: str) -> None:
         """Sleeps until the minimum gap since the previous request to a website has passed.

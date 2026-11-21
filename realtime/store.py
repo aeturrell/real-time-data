@@ -91,13 +91,17 @@ def period_ends(periods: pd.Series) -> pd.Series:
 
 
 def prefer_best_sources(observations: pd.DataFrame) -> pd.DataFrame:
-    """Uses each weaker source only in months that no stronger source covers.
+    """Uses each weaker source only for figures no stronger source gives that month.
 
     Sources are ranked by "_source_rank" (lower is stronger). A row is dropped
-    when a stronger source has any vintage for the same series in the same
-    calendar month, because both then describe the same release. This lets
-    triangles fill the years before exact-date page histories begin (late
-    2015), and also any month afterwards that the page histories miss. Only the
+    when a stronger source gives the same period of the same series in the
+    same calendar month, because both then describe the same release. Periods
+    the stronger source does not give are kept: an old release's tables may
+    start in 1997, for example, while a real-time database holds the whole
+    history from the same release, and dropping that history would leave
+    earlier years on an older price base. This lets triangles fill the years
+    before exact-date page histories begin (late 2015), and also any month
+    afterwards that the page histories miss. Only the
     source type counts here: every dataset page of the same source type is
     kept, because each one carries releases the others miss (GDP's first
     quarterly estimate is published only in the PN2 dataset, for example).
@@ -107,21 +111,22 @@ def prefer_best_sources(observations: pd.DataFrame) -> pd.DataFrame:
     do not show up as false revisions.
 
     Args:
-        observations: Rows with "series_id", "vintage_date", "value" and
-            "_source_rank" columns.
+        observations: Rows with "series_id", "reference_period",
+            "vintage_date", "value" and "_source_rank" columns.
 
     Returns:
         The rows that survive.
     """
     month = observations["vintage_date"].dt.to_period("M")
     strongest_in_month = observations.groupby(
-        [observations["series_id"], month], observed=True
+        [observations["series_id"], observations["reference_period"], month],
+        observed=True,
     )[SOURCE_RANK_COLUMN].transform("min")
     keep = observations[SOURCE_RANK_COLUMN] == strongest_in_month
     dropped = int((~keep).sum())
     if dropped:
         logger.info(
-            f"Dropped {dropped} rows from weaker sources in months stronger ones cover"
+            f"Dropped {dropped} rows from weaker sources that stronger ones give"
         )
     return _round_gap_fills(observations.loc[keep])
 

@@ -17,12 +17,14 @@ ROUTE_PRIORITY = {
     "triangle": 2,
     "unrevised": 2,
     "realtime_db": 3,
-    "web_archive": 4,
+    "web_archive": 1,
     "ons_bics": 0,
     "boe_dmp": 0,
     "boe_ccs": 0,
     "boe_agents": 0,
 }
+WEAKEST_PRIORITY = max(ROUTE_PRIORITY.values()) + 1
+UPPER_BOUND_PRIORITY = {"web_archive": WEAKEST_PRIORITY}
 
 
 class Source(Protocol):

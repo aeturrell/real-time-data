@@ -70,7 +70,7 @@ labour_gap_end = f"{labour_vintages[labour_gap_position]:%B %Y}"
 - **Business surveys.** Survey results come from samples of firms and are not comparable with official figures or with each other. Their histories are also short in real time: BICS results start in December 2021 and mostly May 2022, Credit Conditions Survey spreadsheets in January 2016, and Decision Maker Panel headline worksheets in late 2021 or 2022. Earlier survey periods first appear late, often as `history`.
 - **BICS release dates.** 20 of the 160 ONS editions carry the previous wave's release date. These use the next release instead, so they can be about two weeks late.
 - **Agents' scores.** Past versions of the file cannot be seen, so dates are estimates that can be up to about three months late, and any later correction by the Bank would be hidden.
-- **Sources not yet used.** ONS pages saved by the National Archives and the ONS API could fill in more of the years before `{python} exact_dating_start`.
+- **Sources not yet used.** More of the old ONS website's releases saved by the National Archives could be configured (such as services, business investment, the balance of payments and productivity), though not every series here is in their tables: public sector net borrowing appears only in chart files, and the core and services inflation rates and the current producer price codes are not in the saved price tables. Its releases from before 2011 (PDF bulletins from 1999 onwards) and the ONS API could fill in more of the years before `{python} exact_dating_start`.
 
 ## Specific issues
 

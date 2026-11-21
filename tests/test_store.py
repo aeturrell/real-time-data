@@ -124,6 +124,30 @@ def test_prefer_best_sources_fills_months_the_stronger_source_misses() -> None:
     assert kept["value"].tolist() == [4.1236, 4.2, 4.2, 4.3]
 
 
+def test_prefer_best_sources_keeps_frequencies_the_stronger_source_lacks() -> None:
+    rows = pd.DataFrame(
+        [
+            observation("2013-01", "2013-02-19", 2.7, rank=2),
+            observation("2013-01", "2013-02-28", 2.7, rank=4),
+            observation("2012Q4", "2013-02-28", 2.7, rank=4),
+        ]
+    )
+    kept = prefer_best_sources(rows)
+    assert kept["reference_period"].tolist() == ["2013-01", "2012Q4"]
+
+
+def test_prefer_best_sources_keeps_periods_the_stronger_source_lacks() -> None:
+    rows = pd.DataFrame(
+        [
+            observation("1996Q4", "2014-09-30", 280.0, rank=6),
+            observation("1997Q1", "2014-09-30", 297.0, rank=6),
+            observation("1997Q1", "2014-09-30", 298.0, rank=2),
+        ]
+    )
+    kept = prefer_best_sources(rows)
+    assert kept["value"].tolist() == [280.0, 298.0]
+
+
 def test_label_release_types_marks_late_first_rows_as_history() -> None:
     rows = pd.DataFrame(
         [
