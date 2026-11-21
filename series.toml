@@ -4,6 +4,9 @@
 # time-series page for that CDID (late 2015 onwards, exact release dates).
 # [[triangle]] entries are collected from ONS revisions-triangle spreadsheets
 # (often back to the 1990s, publication month only).
+# [[web_archive]] entries are collected from the reference tables of releases
+# on the old ONS website (2011 to early 2016, exact release dates), as saved by
+# the National Archives. Each series they read needs a [[series]] entry.
 
 # ---------------------------------------------------------------- Output
 
@@ -1908,3 +1911,109 @@ survey = "BICS"
 sheet = '^International Demand TS \(WTD\)$'
 answer = "Demand decreased"
 trading_status = "Not permanently stopped trading"
+
+# ---------------------------------------------------------------- Old ONS website releases (National Archives)
+# Each entry lists the reference tables to read, most preferred first: where
+# two give the same figure, the earlier one wins. For each table:
+#   files  - regular expression for its file name in each edition;
+#   series - the series it supplies (each needs a [[series]] entry);
+#   title  - optional regular expression for the sheets to read, matched
+#            against the first text at the top of each sheet;
+#   scale  - optional factor putting its figures into the units of the
+#            series' ONS page (people into thousands, hours into millions).
+# A series code can head figures in different units in different tables, or
+# in different sheets of one table, so every table and scale here has been
+# checked against the earliest page histories and, where the archive has
+# them, against revisions triangles and real-time databases of the same date.
+# These releases rank above triangles, never-revised back-fills and real-time
+# databases, because their publication dates are exact to the day.
+
+[[web_archive]]
+release = "lms/labour-market-statistics"
+dataset = "LMS"
+editions = "month"
+first_year = 2011
+last_year = 2016
+tables = [
+    { files = '^table-a02(-sa)?\.xls$', title = '^(SUMMARY OF NATIONAL LFS DATA|TABLE A02)', series = ["MGRZ", "MGSC"], scale = 0.001 },
+    { files = '^table-a02(-sa)?\.xls$', title = '^A02 SUMMARY', series = ["MGRZ", "MGSC"] },
+    { files = '^table-a02(-sa)?\.xls$', series = ["MGSX", "LF24", "LF2S"] },
+    { files = '^table-emp01(-sa)?\.xls$', title = '^(EMPLOYMENT|TABLE EMP01)', series = ["MGRZ"], scale = 0.001 },
+    { files = '^table-unem01(-sa)?\.xls$', title = '^(UNEMPLOYMENT|TABLE UNEM01)', series = ["MGSC"], scale = 0.001 },
+    { files = '^table-unem01(-sa)?\.xls$', series = ["MGSX"] },
+    { files = '^table-hour01(-sa)?\.xls$', title = '^(HOUR01|TABLE HOUR01)', series = ["YBUS"], scale = 0.000001 },
+    { files = '^table-vacs01\.xls$', series = ["AP2Y"] },
+    { files = '^table-jobs01\.xls$', series = ["DYDC"] },
+    { files = '^table-earn01\.xls$', series = ["KAB9", "KAC2", "KAI9", "KAJ4"] },
+    { files = '^table-cla01\.xls$', series = ["BCJD"] },
+]
+
+[[web_archive]]
+release = "iop/index-of-production"
+dataset = "DIOP"
+editions = "month"
+first_year = 2011
+last_year = 2016
+tables = [
+    { files = '^rft-.*\.xls$', title = '^IOP5$', series = ["K222", "K22A"] },
+]
+
+[[web_archive]]
+release = "rsi/retail-sales"
+dataset = "DRSI"
+editions = "month"
+first_year = 2011
+last_year = 2016
+tables = [
+    { files = '^rft-.*\.xls$', title = '^(KPSA|1A|1Q)$', series = ["J5EK"] },
+]
+
+[[web_archive]]
+release = "cpi/consumer-price-indices"
+dataset = "MM23"
+editions = "month"
+first_year = 2011
+last_year = 2016
+tables = [
+    { files = '^(cpi-and-rpi-detailed-reference-tables|consumer-price-inflation-reference-tables|rft-cpi-.*)\.xls$', series = ["D7BT", "D7G7", "L55O", "CHAW"] },
+]
+
+[[web_archive]]
+release = "gva/gross-domestic-product--preliminary-estimate"
+dataset = "PGDP"
+editions = "quarter"
+first_year = 2011
+last_year = 2016
+tables = [
+    { files = '^rft-.*\.xls$', title = '^B1$', series = ["IHYQ"] },
+]
+
+[[web_archive]]
+release = "naa2/second-estimate-of-gdp"
+dataset = "PN2"
+editions = "quarter"
+first_year = 2011
+last_year = 2016
+tables = [
+    { files = '^rft-.*\.xls$', title = '^A1$', series = ["IHYQ", "YBGB"] },
+    { files = '^rft-.*\.xls$', title = '^C1$', series = ["YBHA", "ABJQ"] },
+    { files = '^rft-.*\.xls$', title = '^C2$', series = ["ABMI", "NMRY", "CAFU"] },
+    { files = '^rft-.*\.xls$', title = '^B1$', series = ["IHYQ"] },
+]
+
+[[web_archive]]
+release = "naa2/quarterly-national-accounts"
+dataset = "QNA"
+editions = "quarter"
+first_year = 2011
+last_year = 2016
+tables = [
+    { files = '^rft-.*\.xls$', title = '^A1$', series = ["IHYQ", "YBGB"] },
+    { files = '^rft-.*\.xls$', title = '^C1$', series = ["YBHA", "ABJQ"] },
+    { files = '^rft-.*\.xls$', title = '^C2$', series = ["ABMI", "NMRY", "CAFU"] },
+    { files = '^rft-.*\.xls$', title = '^F$', series = ["KG7P"] },
+    { files = '^rft-.*\.xls$', title = '^J2$', series = ["NRJR"] },
+    { files = '^rft-.*\.xls$', title = '^J3$', series = ["NRJS"] },
+    { files = '^rft-.*\.xls$', title = '^E1$', series = ["ABJQ"] },
+    { files = '^rft-.*\.xls$', title = '^G$', series = ["CAFU"] },
+]

@@ -429,6 +429,7 @@ The figures come from files published by ONS and the Bank of England, gathered b
 - **Past versions of ONS web pages.** ONS keeps every version of each series' page. These give exact publication dates, but mostly only from `{python} exact_dating_start`. [Example: GDP](https://www.ons.gov.uk/economy/grossdomesticproductgdp/timeseries/abmi/qna){target="_blank" rel="noopener"}.
 - **Revisions triangles.** These are ONS spreadsheets that lay out each estimate of a period as it was revised, row by row. They often reach back well before the page histories but record only the publication month. [Example: GDP revisions triangle](https://www.ons.gov.uk/economy/grossdomesticproductgdp/datasets/revisionstrianglesforukgdpabmi){target="_blank" rel="noopener"}.
 - **Real-time databases.** These are ONS spreadsheets holding each published version of GDP and its main expenditure components, by month. GDP goes back to `{python} first_vintage_year`. [Example: GDP real-time database](https://www.ons.gov.uk/economy/grossdomesticproductgdp/datasets/realtimedatabaseforukgdpabmi){target="_blank" rel="noopener"}.
+- **Old ONS website releases.** Before 2016, each ONS release had its own folder of spreadsheets on the old ONS website. The National Archives saved these, so they give exact publication dates for about five years before the page histories begin. They cover the labour market, industrial production, retail sales, consumer prices and GDP. [Example: Labour market statistics, June 2013](https://webarchive.nationalarchives.gov.uk/ukgwa/20130701000000/http://www.ons.gov.uk/ons/rel/lms/labour-market-statistics/june-2013/index.html){target="_blank" rel="noopener"}.
 - **Never-revised series.** ONS does not revise some price measures, such as the Retail Prices Index, so today's figure is also the first one published. [Example: Retail Prices Index](https://www.ons.gov.uk/economy/inflationandpriceindices/timeseries/chaw/mm23){target="_blank" rel="noopener"}.
 - **Business surveys.** The Business Insights and Conditions Survey comes from ONS. The Decision Maker Panel, the Credit Conditions Survey and the Agents' scores come from the Bank of England. The first three publish a new file for each release, so each file is a true vintage. The Agents' scores come as a single file, so their dates are estimated from the Bank's report dates. [Example: Decision Maker Panel](https://www.bankofengland.co.uk/decision-maker-panel){target="_blank" rel="noopener"}.
 
@@ -438,11 +439,13 @@ The figures come from files published by ONS and the Bank of England, gathered b
 #| fig-alt: "A stacked bar chart of the share of rows per publication year by source. The earliest years come entirely from real-time databases, then revisions triangles supply a growing share, and in the most recent years past versions of ONS pages supply most rows, with the four survey routes making up part of the rest."
 
 AGENTS_BLUE = "#7C9CFF"
+ARCHIVE_GREEN = "#9BE564"
 SOURCE_NAMES = {
     "series_json": "Past versions of ONS pages",
     "triangle": "Revisions triangles",
     "realtime_db": "Real-time databases",
     "unrevised": "Never-revised series",
+    "web_archive": "Old ONS website releases",
     "ons_bics": "Business Insights and Conditions Survey",
     "boe_dmp": "Decision Maker Panel",
     "boe_ccs": "Credit Conditions Survey",
@@ -453,6 +456,7 @@ SOURCE_COLOURS = {
     "triangle": theme.DEGAUSS_MAGENTA,
     "realtime_db": theme.PHOSPHOR_AMBER,
     "unrevised": theme.OXIDE_SLATE,
+    "web_archive": ARCHIVE_GREEN,
     "ons_bics": theme.ELECTRON_WHITE,
     "boe_dmp": theme.CORRUPTED_VIOLET,
     "boe_ccs": theme.SECONDARY_TEXT,
@@ -501,7 +505,7 @@ These are the choices most likely to affect your results.
 
 **Dating gets sharper from `{python} exact_dating_start`.** Before then, nearly all dates are month-ends. Afterwards, most are exact. This is due to how ONS makes revisions and vintages available.
 
-**One source at a time.** When sources overlap, the one with the most exact dates is preferred. Page histories rank first, then triangles and never-revised series, then real-time databases.
+**One source at a time.** When sources give the same figure in the same month, the one with the most exact dates is preferred. Page histories rank first, then old ONS website releases (also dated to the day), then triangles and never-revised series, then real-time databases.
 
 **Rounding differences are not revisions.** Two sources may give the same number to different decimal places. Values filling a gap are rounded to match the series' main source, so a change in rounding does not show up as a false revision.
 

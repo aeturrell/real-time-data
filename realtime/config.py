@@ -10,6 +10,8 @@ from realtime.settings import SERIES_CONFIG_PATH
 DEFAULT_SHEET_PATTERN = "triangle"
 DEFAULT_BASIS = "period"
 DEFAULT_PUBLIC_FROM = "2006-01"
+EDITION_STYLES = frozenset({"month", "quarter"})
+DEFAULT_SCALE = 1.0
 
 
 @dataclass(frozen=True)
@@ -96,6 +98,65 @@ class RealtimeDbSpec:
 
 
 @dataclass(frozen=True)
+class WebArchiveTable:
+    """A reference table that supplies some series, in one set of units.
+
+    A series code can head figures in different units in different tables
+    (people in one, thousands in another) and even in different sheets of one
+    table, and can also head a table of something else, such as revisions.
+    So each series is read only from the tables named for it.
+
+    Attributes:
+        files: Regular expression picking the table's file in each edition.
+        series: The series codes to read from it. Each must also be a
+            [[series]] entry, whose basis and labels are used.
+        title: Optional regular expression for the titles of the sheets to
+            read (the first text at the top of a sheet, such as "IOP5"); if
+            not given, every sheet is read.
+        scale: Factor that puts the table's figures into the units of the
+            series' ONS pages, such as 0.001 for people into thousands.
+    """
+
+    files: str
+    series: tuple[str, ...]
+    title: str | None = None
+    scale: float = DEFAULT_SCALE
+
+
+@dataclass(frozen=True)
+class WebArchiveSpec:
+    """A group of releases on the old ONS website, read from the National Archives.
+
+    Attributes:
+        release: The release's path under "/ons/rel/" on the old website, for
+            example "lms/labour-market-statistics".
+        dataset_id: The dataset code to record, for example "LMS".
+        editions: "month" for editions named like "june-2013", "quarter" for
+            editions named like "q2-2013".
+        first_year: The first year whose editions are looked for.
+        last_year: The last year whose editions are looked for.
+        tables: The tables to read, most preferred first: where two give the
+            same figure, the earlier one wins.
+    """
+
+    release: str
+    dataset_id: str
+    editions: str
+    first_year: int
+    last_year: int
+    tables: tuple[WebArchiveTable, ...]
+
+    @property
+    def series(self) -> tuple[str, ...]:
+        """Every series code read from the release, in order of first mention."""
+        return tuple(
+            dict.fromkeys(
+                series_id for table in self.tables for series_id in table.series
+            )
+        )
+
+
+@dataclass(frozen=True)
 class SurveySpec:
     """A series collected from the published files of a business survey.
 
@@ -143,12 +204,15 @@ class ArchiveConfig:
         triangles: Series collected from revisions triangles.
         realtime_dbs: Series collected from ONS real-time databases.
         surveys: Series collected from the published files of business surveys.
+        web_archives: Releases on the old ONS website, saved by the National
+            Archives, whose reference tables supply series before late 2015.
     """
 
     series: tuple[SeriesSpec, ...] = field(default_factory=tuple)
     triangles: tuple[TriangleSpec, ...] = field(default_factory=tuple)
     realtime_dbs: tuple[RealtimeDbSpec, ...] = field(default_factory=tuple)
     surveys: tuple[SurveySpec, ...] = field(default_factory=tuple)
+    web_archives: tuple[WebArchiveSpec, ...] = field(default_factory=tuple)
 
     def short_names(self) -> dict[str, str]:
         """Maps every series ID to its short name.
@@ -181,7 +245,8 @@ def load_config(path: Path = SERIES_CONFIG_PATH) -> ArchiveConfig:
         The parsed configuration.
 
     Raises:
-        ValueError: If a series ID appears twice in the same section.
+        ValueError: If a series ID appears twice in the same section, or a
+            [[web_archive]] entry names a series with no [[series]] entry.
     """
     with path.open("rb") as config_file:
         raw = tomllib.load(config_file)
@@ -189,12 +254,20 @@ def load_config(path: Path = SERIES_CONFIG_PATH) -> ArchiveConfig:
     triangles = tuple(_triangle_spec(entry) for entry in raw.get("triangle", []))
     databases = tuple(_realtime_db_spec(entry) for entry in raw.get("realtime_db", []))
     surveys = tuple(_survey_spec(entry) for entry in raw.get("survey", []))
+    web_archives = tuple(
+        _web_archive_spec(entry) for entry in raw.get("web_archive", [])
+    )
     _check_unique([spec.series_id for spec in series], "series")
     _check_unique([spec.series_id for spec in triangles], "triangle")
     _check_unique([spec.series_id for spec in databases], "realtime_db")
     _check_unique([spec.series_id for spec in surveys], "survey")
+    _check_web_archive_series(web_archives, series)
     return ArchiveConfig(
-        series=series, triangles=triangles, realtime_dbs=databases, surveys=surveys
+        series=series,
+        triangles=triangles,
+        realtime_dbs=databases,
+        surveys=surveys,
+        web_archives=web_archives,
     )
 
 
@@ -288,6 +361,63 @@ def _survey_spec(entry: dict) -> SurveySpec:
         horizon=entry.get("horizon"),
         public_from=entry.get("public_from", DEFAULT_PUBLIC_FROM),
     )
+
+
+def _web_archive_spec(entry: dict) -> WebArchiveSpec:
+    """Builds a WebArchiveSpec from one [[web_archive]] table.
+
+    Args:
+        entry: The raw TOML table.
+
+    Returns:
+        The spec.
+
+    Raises:
+        ValueError: If the edition style is unknown or no tables are given.
+    """
+    if entry["editions"] not in EDITION_STYLES:
+        raise ValueError(f"{entry['release']}: unknown editions {entry['editions']!r}")
+    tables = tuple(
+        WebArchiveTable(
+            files=table["files"],
+            series=tuple(series_id.upper() for series_id in table["series"]),
+            title=table.get("title"),
+            scale=float(table.get("scale", DEFAULT_SCALE)),
+        )
+        for table in entry["tables"]
+    )
+    if not tables:
+        raise ValueError(f"{entry['release']}: no tables given")
+    return WebArchiveSpec(
+        release=entry["release"],
+        dataset_id=entry["dataset"].upper(),
+        editions=entry["editions"],
+        first_year=entry["first_year"],
+        last_year=entry["last_year"],
+        tables=tables,
+    )
+
+
+def _check_web_archive_series(
+    web_archives: tuple[WebArchiveSpec, ...], series: tuple[SeriesSpec, ...]
+) -> None:
+    """Checks that every series read from the web archive has a [[series]] entry.
+
+    Args:
+        web_archives: The [[web_archive]] entries.
+        series: The [[series]] entries.
+
+    Raises:
+        ValueError: If any series is missing.
+    """
+    known = {spec.series_id for spec in series}
+    missing = sorted(
+        {series_id for spec in web_archives for series_id in spec.series} - known
+    )
+    if missing:
+        raise ValueError(
+            f"[[web_archive]] series without a [[series]] entry: {missing}"
+        )
 
 
 def _check_unique(series_ids: list[str], section: str) -> None:

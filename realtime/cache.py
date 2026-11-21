@@ -109,6 +109,17 @@ class DownloadCache:
         self._fetched_this_run.add(url)
         return self._load(entry)
 
+    def is_cached(self, url: str) -> bool:
+        """Checks whether a URL has ever been downloaded.
+
+        Args:
+            url: The full URL.
+
+        Returns:
+            True if the cache holds a copy of it.
+        """
+        return url in self._manifest
+
     def fetch_json(self, url: str, immutable: bool) -> dict:
         """Returns the parsed JSON at a URL, downloading it only when necessary.
 
